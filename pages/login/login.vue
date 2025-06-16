@@ -41,20 +41,32 @@
 				</view>
 
 				<!-- 历史账号下拉列表 -->
-				<view class="history-dropdown" v-if="showHistoryDropdown">
+				<!-- 调试信息显示 -->
+				<view class="debug-info" v-if="showDebugButtons && showHistoryDropdown">
+					<text class="debug-text">调试: showHistoryDropdown={{showHistoryDropdown}}, hasHistory={{hasHistory}}, 记录数={{currentHistory.length}}</text>
+				</view>
+
+				<view class="history-dropdown" v-if="showHistoryDropdown" :key="forceRenderKey" :style="{ border: showDebugButtons ? '2px solid red' : '' }">
 					<view class="history-header">
-						<text class="history-title">最近登录</text>
+						<text class="history-title">最近登录 ({{currentHistory.length}}条)</text>
 						<text class="clear-history" @click="clearAllHistory" v-if="hasHistory">清空</text>
 					</view>
+
+					<!-- 强制显示测试内容 -->
+					<view class="test-content" v-if="showDebugButtons">
+						<text class="test-text">测试内容：这里应该能看到</text>
+					</view>
+
 					<scroll-view class="history-list" scroll-y="true" v-if="hasHistory">
 						<view
 							class="history-item"
 							v-for="(item, index) in currentHistory"
 							:key="index"
 							@click="selectHistoryAccount(item)"
+							:style="{ border: showDebugButtons ? '1px solid blue' : '' }"
 						>
 							<view class="history-info">
-								<text class="history-account">{{ item.displayName }}</text>
+								<text class="history-account">{{ item.displayName || item.studentId }}</text>
 								<text class="history-time">{{ formatTime(item.lastLogin) }}</text>
 							</view>
 							<view class="history-actions">
@@ -111,6 +123,8 @@
 			<button class="debug-btn" @click="debugHistoryFunction">🔍 调试历史功能</button>
 			<button class="debug-btn" @click="addTestHistory">➕ 添加测试历史</button>
 			<button class="debug-btn" @click="clearTestHistory">🗑️ 清空历史</button>
+			<button class="debug-btn" @click="forceShowDropdown">🔧 强制显示下拉框</button>
+			<button class="debug-btn" @click="forceHideDropdown">❌ 强制隐藏下拉框</button>
 		</view>
 
 		<!-- 底部信息 -->
@@ -155,7 +169,8 @@ export default {
 			showHistoryDropdown: false,  // 是否显示历史记录下拉
 			currentHistory: [],  // 当前模式的历史记录
 			dropdownBlurTimer: null,  // 下拉框失焦定时器
-			showDebugButtons: process.env.NODE_ENV === 'development'  // 开发环境显示调试按钮
+			showDebugButtons: process.env.NODE_ENV === 'development',  // 开发环境显示调试按钮
+			forceRenderKey: 0  // 强制重新渲染的key
 		}
 	},
 	computed: {
@@ -318,16 +333,21 @@ export default {
 			console.log('🔍 toggleHistoryDropdown - hasHistory:', this.hasHistory);
 			console.log('🔍 toggleHistoryDropdown - currentHistory长度:', this.currentHistory.length);
 
-			this.showHistoryDropdown = !this.showHistoryDropdown;
+			// 先加载历史记录，确保数据是最新的
+			this.loadHistoryAccounts();
 
-			console.log('🔍 toggleHistoryDropdown - 点击后状态:', this.showHistoryDropdown);
+			// 强制重新渲染
+			this.forceRenderKey++;
 
-			if (this.showHistoryDropdown) {
-				this.loadHistoryAccounts();
-			}
+			// 使用nextTick确保数据更新后再切换显示状态
+			this.$nextTick(() => {
+				this.showHistoryDropdown = !this.showHistoryDropdown;
+				console.log('🔍 toggleHistoryDropdown - 点击后状态:', this.showHistoryDropdown);
+				console.log('🔍 toggleHistoryDropdown - forceRenderKey:', this.forceRenderKey);
 
-			// 强制更新视图
-			this.$forceUpdate();
+				// 再次强制更新
+				this.$forceUpdate();
+			});
 		},
 
 		onStudentIdFocus() {
@@ -468,8 +488,12 @@ export default {
 				simpleStorage.addToHistory(testAccount, userType);
 				this.loadHistoryAccounts();
 
+				// 强制显示下拉框来测试
+				this.showHistoryDropdown = true;
+				this.forceRenderKey++;
+
 				uni.showToast({
-					title: '已添加测试历史记录',
+					title: '已添加测试历史记录并显示下拉框',
 					icon: 'success'
 				});
 			},
@@ -482,6 +506,30 @@ export default {
 				uni.showToast({
 					title: '已清空历史记录',
 					icon: 'success'
+				});
+			},
+
+			forceShowDropdown() {
+				console.log('🔧 强制显示下拉框');
+				this.showHistoryDropdown = true;
+				this.forceRenderKey++;
+				this.$forceUpdate();
+
+				uni.showToast({
+					title: '强制显示下拉框',
+					icon: 'none'
+				});
+			},
+
+			forceHideDropdown() {
+				console.log('❌ 强制隐藏下拉框');
+				this.showHistoryDropdown = false;
+				this.forceRenderKey++;
+				this.$forceUpdate();
+
+				uni.showToast({
+					title: '强制隐藏下拉框',
+					icon: 'none'
 				});
 			},
 
@@ -761,6 +809,31 @@ export default {
 	font-size: 22rpx;
 	color: #999;
 	display: block;
+}
+
+/* 调试样式 */
+.debug-info {
+	background-color: yellow;
+	padding: 10rpx;
+	margin: 10rpx 0;
+	border: 1rpx solid red;
+}
+
+.debug-text {
+	font-size: 20rpx;
+	color: red;
+}
+
+.test-content {
+	background-color: lightgreen;
+	padding: 20rpx;
+	text-align: center;
+}
+
+.test-text {
+	font-size: 24rpx;
+	color: darkgreen;
+	font-weight: bold;
 }
 
 /* 调试按钮样式 */
