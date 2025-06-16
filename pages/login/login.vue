@@ -41,29 +41,17 @@
 				</view>
 
 				<!-- 历史账号下拉列表 -->
-				<!-- 调试信息显示 -->
-				<view class="debug-info" v-if="showDebugButtons && showHistoryDropdown">
-					<text class="debug-text">调试: showHistoryDropdown={{showHistoryDropdown}}, hasHistory={{hasHistory}}, 记录数={{currentHistory.length}}</text>
-				</view>
-
-				<view class="history-dropdown" v-if="showHistoryDropdown" :key="forceRenderKey" :style="{ border: showDebugButtons ? '2px solid red' : '' }">
+				<view class="history-dropdown" v-if="showHistoryDropdown">
 					<view class="history-header">
-						<text class="history-title">最近登录 ({{currentHistory.length}}条)</text>
+						<text class="history-title">最近登录</text>
 						<text class="clear-history" @click="clearAllHistory" v-if="hasHistory">清空</text>
 					</view>
-
-					<!-- 强制显示测试内容 -->
-					<view class="test-content" v-if="showDebugButtons">
-						<text class="test-text">测试内容：这里应该能看到</text>
-					</view>
-
 					<scroll-view class="history-list" scroll-y="true" v-if="hasHistory">
 						<view
 							class="history-item"
 							v-for="(item, index) in currentHistory"
 							:key="index"
 							@click="selectHistoryAccount(item)"
-							:style="{ border: showDebugButtons ? '1px solid blue' : '' }"
 						>
 							<view class="history-info">
 								<text class="history-account">{{ item.displayName || item.studentId }}</text>
@@ -118,14 +106,7 @@
 
 		</view>
 
-		<!-- 调试按钮 -->
-		<view class="debug-section" v-if="showDebugButtons">
-			<button class="debug-btn" @click="debugHistoryFunction">🔍 调试历史功能</button>
-			<button class="debug-btn" @click="addTestHistory">➕ 添加测试历史</button>
-			<button class="debug-btn" @click="clearTestHistory">🗑️ 清空历史</button>
-			<button class="debug-btn" @click="forceShowDropdown">🔧 强制显示下拉框</button>
-			<button class="debug-btn" @click="forceHideDropdown">❌ 强制隐藏下拉框</button>
-		</view>
+
 
 		<!-- 底部信息 -->
 		<view class="footer">
@@ -168,9 +149,7 @@ export default {
 			isTeacherMode: false,  // 是否为教师登录模式
 			showHistoryDropdown: false,  // 是否显示历史记录下拉
 			currentHistory: [],  // 当前模式的历史记录
-			dropdownBlurTimer: null,  // 下拉框失焦定时器
-			showDebugButtons: process.env.NODE_ENV === 'development',  // 开发环境显示调试按钮
-			forceRenderKey: 0  // 强制重新渲染的key
+			dropdownBlurTimer: null  // 下拉框失焦定时器
 		}
 	},
 	computed: {
@@ -191,11 +170,9 @@ export default {
 		this.initializeSimpleStorage();
 	},
 	onLoad() {
-		console.log('🔍 onLoad - 页面加载开始');
 		this.checkLoginStatus();
 		this.loadSavedCredentials();
 		this.loadHistoryAccounts();
-		console.log('🔍 onLoad - 页面加载完成');
 	},
 	methods: {
 		togglePassword() {
@@ -247,13 +224,7 @@ export default {
 
 		loadHistoryAccounts() {
 			const userType = this.isTeacherMode ? 'teacher' : 'student';
-			console.log('🔍 loadHistoryAccounts - 用户类型:', userType);
-
 			this.currentHistory = simpleStorage.getDecryptedHistory(userType);
-
-			console.log('🔍 loadHistoryAccounts - 历史记录数量:', this.currentHistory.length);
-			console.log('🔍 loadHistoryAccounts - 历史记录数据:', this.currentHistory);
-			console.log('🔍 loadHistoryAccounts - hasHistory计算结果:', this.hasHistory);
 		},
 
 		async handleLogin() {
@@ -329,25 +300,10 @@ export default {
 
 		// 历史账号相关方法
 		toggleHistoryDropdown() {
-			console.log('🔍 toggleHistoryDropdown - 点击前状态:', this.showHistoryDropdown);
-			console.log('🔍 toggleHistoryDropdown - hasHistory:', this.hasHistory);
-			console.log('🔍 toggleHistoryDropdown - currentHistory长度:', this.currentHistory.length);
-
-			// 先加载历史记录，确保数据是最新的
-			this.loadHistoryAccounts();
-
-			// 强制重新渲染
-			this.forceRenderKey++;
-
-			// 使用nextTick确保数据更新后再切换显示状态
-			this.$nextTick(() => {
-				this.showHistoryDropdown = !this.showHistoryDropdown;
-				console.log('🔍 toggleHistoryDropdown - 点击后状态:', this.showHistoryDropdown);
-				console.log('🔍 toggleHistoryDropdown - forceRenderKey:', this.forceRenderKey);
-
-				// 再次强制更新
-				this.$forceUpdate();
-			});
+			this.showHistoryDropdown = !this.showHistoryDropdown;
+			if (this.showHistoryDropdown) {
+				this.loadHistoryAccounts();
+			}
 		},
 
 		onStudentIdFocus() {
@@ -437,11 +393,7 @@ export default {
 		async initializeSimpleStorage() {
 			try {
 				// 清理过期数据
-				const cleanSuccess = simpleStorage.migrateAndValidateData();
-				if (cleanSuccess) {
-					console.info('简单存储初始化成功');
-				}
-
+				simpleStorage.migrateAndValidateData();
 				// 验证存储完整性
 				simpleStorage.validateStorageIntegrity();
 			} catch (e) {
@@ -449,89 +401,6 @@ export default {
 				// 即使初始化失败，也不影响正常登录功能
 			}
 		},
-
-			// 调试方法
-			debugHistoryFunction() {
-				console.group('🔍 历史功能调试信息');
-
-				const userType = this.isTeacherMode ? 'teacher' : 'student';
-				console.log('当前用户类型:', userType);
-				console.log('showHistoryDropdown:', this.showHistoryDropdown);
-				console.log('currentHistory:', this.currentHistory);
-				console.log('hasHistory:', this.hasHistory);
-
-				// 检查本地存储
-				const storageKey = `csmu_login_history_${userType}`;
-				const rawData = uni.getStorageSync(storageKey);
-				console.log('本地存储键:', storageKey);
-				console.log('本地存储原始数据:', rawData);
-
-				// 重新加载历史记录
-				this.loadHistoryAccounts();
-
-				console.groupEnd();
-
-				uni.showModal({
-					title: '调试信息',
-					content: `用户类型: ${userType}\n历史记录数量: ${this.currentHistory.length}\nhasHistory: ${this.hasHistory}\n\n详细信息请查看控制台`,
-					showCancel: false
-				});
-			},
-
-			addTestHistory() {
-				const userType = this.isTeacherMode ? 'teacher' : 'student';
-				const testAccount = {
-					studentId: userType === 'teacher' ? 'T001' : '2021001001',
-					password: 'test123456'
-				};
-
-				simpleStorage.addToHistory(testAccount, userType);
-				this.loadHistoryAccounts();
-
-				// 强制显示下拉框来测试
-				this.showHistoryDropdown = true;
-				this.forceRenderKey++;
-
-				uni.showToast({
-					title: '已添加测试历史记录并显示下拉框',
-					icon: 'success'
-				});
-			},
-
-			clearTestHistory() {
-				const userType = this.isTeacherMode ? 'teacher' : 'student';
-				simpleStorage.clearHistory(userType);
-				this.loadHistoryAccounts();
-
-				uni.showToast({
-					title: '已清空历史记录',
-					icon: 'success'
-				});
-			},
-
-			forceShowDropdown() {
-				console.log('🔧 强制显示下拉框');
-				this.showHistoryDropdown = true;
-				this.forceRenderKey++;
-				this.$forceUpdate();
-
-				uni.showToast({
-					title: '强制显示下拉框',
-					icon: 'none'
-				});
-			},
-
-			forceHideDropdown() {
-				console.log('❌ 强制隐藏下拉框');
-				this.showHistoryDropdown = false;
-				this.forceRenderKey++;
-				this.$forceUpdate();
-
-				uni.showToast({
-					title: '强制隐藏下拉框',
-					icon: 'none'
-				});
-			},
 
 
 
@@ -811,49 +680,7 @@ export default {
 	display: block;
 }
 
-/* 调试样式 */
-.debug-info {
-	background-color: yellow;
-	padding: 10rpx;
-	margin: 10rpx 0;
-	border: 1rpx solid red;
-}
 
-.debug-text {
-	font-size: 20rpx;
-	color: red;
-}
-
-.test-content {
-	background-color: lightgreen;
-	padding: 20rpx;
-	text-align: center;
-}
-
-.test-text {
-	font-size: 24rpx;
-	color: darkgreen;
-	font-weight: bold;
-}
-
-/* 调试按钮样式 */
-.debug-section {
-	margin: 20rpx 40rpx;
-	display: flex;
-	flex-direction: column;
-	gap: 10rpx;
-}
-
-.debug-btn {
-	background-color: #FF9800;
-	color: white;
-	border: none;
-	border-radius: 8rpx;
-	padding: 12rpx 24rpx;
-	font-size: 24rpx;
-	opacity: 0.8;
-	margin-bottom: 10rpx;
-}
 
 /* 开发环境测试按钮 */
 .dev-test-section {

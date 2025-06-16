@@ -96,14 +96,7 @@ class SimpleStorage {
 	getLoginHistory(userType = 'student') {
 		try {
 			const storageKey = `${this.historyKey}_${userType}`;
-			const data = uni.getStorageSync(storageKey) || [];
-
-			console.log('🔍 getLoginHistory - 存储键:', storageKey);
-			console.log('🔍 getLoginHistory - 原始数据:', data);
-			console.log('🔍 getLoginHistory - 数据类型:', typeof data);
-			console.log('🔍 getLoginHistory - 是否为数组:', Array.isArray(data));
-
-			return data;
+			return uni.getStorageSync(storageKey) || [];
 		} catch (e) {
 			console.error('获取历史记录失败:', e);
 			return [];
@@ -112,10 +105,7 @@ class SimpleStorage {
 
 	// 获取历史记录（无需解密）
 	getDecryptedHistory(userType = 'student') {
-		console.log('🔍 getDecryptedHistory - 用户类型:', userType);
-		const history = this.getLoginHistory(userType);
-		console.log('🔍 getDecryptedHistory - 返回数据:', history);
-		return history;
+		return this.getLoginHistory(userType);
 	}
 
 	// 删除单个历史记录
@@ -185,7 +175,6 @@ class SimpleStorage {
 	// 简化的初始化方法
 	migrateAndValidateData() {
 		try {
-			console.info('清理过期数据...');
 			this.cleanExpiredData();
 			return true;
 		} catch (e) {
@@ -200,13 +189,6 @@ class SimpleStorage {
 			const credentials = this.getRememberedCredentials();
 			const studentHistory = this.getLoginHistory('student');
 			const teacherHistory = this.getLoginHistory('teacher');
-
-			console.info('存储数据验证完成:', {
-				hasCredentials: !!credentials,
-				studentHistoryCount: studentHistory.length,
-				teacherHistoryCount: teacherHistory.length
-			});
-
 			return true;
 		} catch (e) {
 			console.error('存储数据验证失败:', e);
