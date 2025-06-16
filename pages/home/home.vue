@@ -73,6 +73,10 @@
 					<view class="action-icon test-icon">🔧</view>
 					<text class="action-text">配置测试</text>
 				</view>
+				<view class="action-item" @click="navigateTo('/pages/schedule-api-test/schedule-api-test')">
+					<view class="action-icon api-icon">🔗</view>
+					<text class="action-text">课表接口</text>
+				</view>
 			</view>
 		</view>
 

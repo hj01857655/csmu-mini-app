@@ -1,9 +1,5 @@
 <template>
 	<view class="container">
-		<!-- 导入统一设计系统 -->
-		<style>
-			@import url("../../styles/design-system.css");
-		</style>
 		<!-- 学年学期选择器 - 使用统一设计系统 -->
 		<view class="container-base container-compact">
 			<view class="accent-line"></view>

@@ -1,9 +1,14 @@
 <template>
 	<view class="login-container">
+		<!-- 导入统一设计系统 -->
+		<style>
+			@import url("../../styles/design-system.css");
+		</style>
+
 		<!-- 顶部背景 -->
 		<view class="header-bg">
 			<view class="header-content">
-				<image class="logo" src="/static/logo.png" mode="aspectFit"></image>
+				<image class="logo" src="/static/logo.png" mode="aspectFit" @error="onLogoError"></image>
 				<view class="system-title">强智教务系统</view>
 				<view class="system-subtitle">Kingosoft Educational Administration System</view>
 			</view>
@@ -170,9 +175,16 @@ export default {
 		this.initializeSimpleStorage();
 	},
 	onLoad() {
-		this.checkLoginStatus();
-		this.loadSavedCredentials();
-		this.loadHistoryAccounts();
+		// 性能优化：异步执行非关键初始化
+		this.$nextTick(() => {
+			this.checkLoginStatus();
+			this.loadSavedCredentials();
+			this.loadHistoryAccounts();
+		});
+	},
+	onShow() {
+		// 页面显示时检查网络状态
+		this.checkNetworkStatus();
 	},
 	methods: {
 		togglePassword() {
@@ -230,25 +242,42 @@ export default {
 		async handleLogin() {
 			if (!this.canLogin) return;
 
+			// 检查网络连接
+			if (!await this.checkNetworkStatus()) {
+				uni.showToast({
+					title: '网络连接异常，请检查网络设置',
+					icon: 'none',
+					duration: 3000
+				});
+				return;
+			}
+
 			this.isLoading = true;
+
+			// 显示加载提示
+			uni.showLoading({
+				title: '登录中...',
+				mask: true
+			});
 
 			try {
 				const credentials = {
-					username: this.loginForm.studentId,
-					password: this.loginForm.password
+					username: this.loginForm.studentId.trim(),
+					password: this.loginForm.password.trim()
 				};
 
 				// 使用教务系统登录
 				const result = await authService.login(credentials);
 
 				if (result.success) {
-
 					// 保存凭据
 					this.saveCredentials();
 
+					uni.hideLoading();
 					uni.showToast({
 						title: '登录成功',
-						icon: 'success'
+						icon: 'success',
+						duration: 1500
 					});
 
 					// 跳转到首页
@@ -258,14 +287,31 @@ export default {
 						});
 					}, 1500);
 				} else {
-					throw new Error(result.message);
+					throw new Error(result.message || '登录失败');
 				}
 
 			} catch (error) {
 				console.error('登录失败:', error);
+				uni.hideLoading();
+
+				// 优化错误提示
+				let errorMessage = '登录失败';
+				if (error.message) {
+					if (error.message.includes('网络')) {
+						errorMessage = '网络连接失败，请检查网络设置';
+					} else if (error.message.includes('密码')) {
+						errorMessage = '用户名或密码错误';
+					} else if (error.message.includes('超时')) {
+						errorMessage = '请求超时，请重试';
+					} else {
+						errorMessage = error.message;
+					}
+				}
+
 				uni.showToast({
-					title: error.message || '登录失败',
-					icon: 'none'
+					title: errorMessage,
+					icon: 'none',
+					duration: 3000
 				});
 			} finally {
 				this.isLoading = false;

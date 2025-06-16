@@ -281,6 +281,8 @@ class HttpClient {
 			'/auth/login': this.getMockLoginData(data),
 			'/user/profile': this.getMockUserProfile(),
 			'/schedule/current': this.getMockScheduleData(),
+			'/schedule/semester': this.getMockScheduleData(), // 指定学期课表使用相同数据
+			'/schedule': this.getMockScheduleData(), // 通用课表接口
 			'/grades/list': this.getMockGradesData(),
 			'/exams/list': this.getMockExamsData(),
 			'/courses/available': this.getMockCoursesData(),
@@ -353,31 +355,114 @@ class HttpClient {
 	}
 
 	/**
-	 * 模拟课程表数据
+	 * 模拟课程表数据 - 符合真实接口格式
 	 */
 	getMockScheduleData() {
 		return {
+			semester: '2024-2025-1',
 			week: 17,
+			weekInfo: {
+				startDate: '2025-06-16',
+				endDate: '2025-06-22',
+				isCurrentWeek: true
+			},
 			courses: [
 				{
 					id: 1,
-					name: '高等数学',
+					courseId: 'MATH001',
+					courseName: '高等数学A',
+					courseCode: 'MATH001',
 					teacher: '张教授',
 					location: '教学楼A101',
-					dayOfWeek: 1,
+					dayOfWeek: 1, // 周一
 					timeSlot: '1-2',
-					credit: 4
+					timeText: '08:00-09:50',
+					credit: 4,
+					courseType: 'math',
+					weeks: '1-18',
+					classType: '必修'
 				},
 				{
 					id: 2,
-					name: '大学英语',
+					courseId: 'ENG001',
+					courseName: '大学英语',
+					courseCode: 'ENG001',
 					teacher: '李老师',
 					location: '教学楼B203',
-					dayOfWeek: 1,
+					dayOfWeek: 1, // 周一
 					timeSlot: '5-6',
-					credit: 3
+					timeText: '14:00-15:50',
+					credit: 3,
+					courseType: 'language',
+					weeks: '1-16',
+					classType: '必修'
+				},
+				{
+					id: 3,
+					courseId: 'CS001',
+					courseName: '数据结构与算法',
+					courseCode: 'CS001',
+					teacher: '王教授',
+					location: '教学楼C301',
+					dayOfWeek: 3, // 周三
+					timeSlot: '3-4',
+					timeText: '10:10-12:00',
+					credit: 4,
+					courseType: 'cs',
+					weeks: '1-18',
+					classType: '专业必修'
+				},
+				{
+					id: 4,
+					courseId: 'PHY001',
+					courseName: '大学物理',
+					courseCode: 'PHY001',
+					teacher: '赵老师',
+					location: '教学楼D102',
+					dayOfWeek: 2, // 周二
+					timeSlot: '1-2',
+					timeText: '08:00-09:50',
+					credit: 3,
+					courseType: 'science',
+					weeks: '1-16',
+					classType: '必修'
+				},
+				{
+					id: 5,
+					courseId: 'PE001',
+					courseName: '体育',
+					courseCode: 'PE001',
+					teacher: '刘教练',
+					location: '体育馆',
+					dayOfWeek: 4, // 周四
+					timeSlot: '7-8',
+					timeText: '16:00-17:50',
+					credit: 1,
+					courseType: 'pe',
+					weeks: '1-16',
+					classType: '必修'
+				},
+				{
+					id: 6,
+					courseId: 'CS002',
+					courseName: '计算机网络',
+					courseCode: 'CS002',
+					teacher: '陈教授',
+					location: '教学楼C205',
+					dayOfWeek: 5, // 周五
+					timeSlot: '3-4',
+					timeText: '10:10-12:00',
+					credit: 3,
+					courseType: 'cs',
+					weeks: '1-18',
+					classType: '专业必修'
 				}
-			]
+			],
+			statistics: {
+				totalCourses: 6,
+				totalCredits: 18,
+				weeklyHours: 24
+			}
 		};
 	}
 

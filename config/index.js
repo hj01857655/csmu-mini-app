@@ -39,7 +39,7 @@ const API_CONFIG = {
 		BASE_URL: getEnvVar('VUE_APP_API_BASE_URL') || 'http://localhost:8000/api/v1',
 		TIMEOUT: 10000,
 		RETRY_TIMES: 3,
-		ENABLE_MOCK: true
+		ENABLE_MOCK: false // 切换到真实API进行联调
 	},
 	[ENV.PRODUCTION]: {
 		// 🚀 生产环境配置 - 部署时请更新

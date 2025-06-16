@@ -1,11 +1,22 @@
 <template>
 	<view class="container">
-		<!-- 学期选择器 -->
-		<view class="semester-selector">
+		<!-- 学期选择器 - 使用统一设计系统 -->
+		<view class="container-base container-compact">
+			<view class="accent-line"></view>
 			<picker mode="selector" :value="currentSemesterIndex" :range="semesterOptions" @change="onSemesterChange">
-				<view class="picker-text">
-					{{ semesterOptions[currentSemesterIndex] }}
-					<text class="arrow">▼</text>
+				<view class="picker-base semester-picker">
+					<view class="picker-content picker-content-compact">
+						<view class="picker-left">
+							<text class="picker-label">📊</text>
+							<text class="picker-text">{{ semesterOptions[currentSemesterIndex] || '选择学期' }}</text>
+						</view>
+						<view class="picker-right">
+							<view class="picker-indicator">
+								<text class="picker-arrow">▼</text>
+							</view>
+						</view>
+					</view>
+					<view class="bottom-accent-line"></view>
 				</view>
 			</picker>
 		</view>
@@ -288,26 +299,12 @@ export default {
 
 <style scoped>
 .container {
-	background-color: #f5f5f5;
+	background-color: var(--background-tertiary);
 	min-height: 100vh;
 }
 
-.semester-selector {
-	background-color: #fff;
-	padding: 20rpx;
-	border-bottom: 1rpx solid #e5e5e5;
-}
-
-.picker-text {
-	text-align: center;
-	font-size: 32rpx;
-	color: #007AFF;
-	padding: 20rpx;
-}
-
-.arrow {
-	margin-left: 10rpx;
-	font-size: 24rpx;
+.semester-picker {
+	margin-bottom: var(--spacing-md);
 }
 
 .grade-summary {

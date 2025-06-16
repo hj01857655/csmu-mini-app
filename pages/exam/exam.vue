@@ -1,15 +1,26 @@
 <template>
 	<view class="container">
-		<!-- 学期选择器 -->
-		<view class="semester-selector">
+		<!-- 学期选择器 - 使用统一设计系统 -->
+		<view class="container-base container-compact">
+			<view class="accent-line"></view>
 			<picker mode="selector" :value="currentSemesterIndex" :range="semesterOptions" @change="onSemesterChange">
-				<view class="picker-text">
-					{{ semesterOptions[currentSemesterIndex] }}
-					<text class="arrow">▼</text>
+				<view class="picker-base semester-picker">
+					<view class="picker-content picker-content-compact">
+						<view class="picker-left">
+							<text class="picker-label">📝</text>
+							<text class="picker-text">{{ semesterOptions[currentSemesterIndex] || '选择学期' }}</text>
+						</view>
+						<view class="picker-right">
+							<view class="picker-indicator">
+								<text class="picker-arrow">▼</text>
+							</view>
+						</view>
+					</view>
+					<view class="bottom-accent-line"></view>
 				</view>
 			</picker>
 		</view>
-		
+
 		<!-- 考试统计 -->
 		<view class="exam-summary">
 			<view class="summary-card">
@@ -34,7 +45,7 @@
 				</view>
 			</view>
 		</view>
-		
+
 		<!-- 考试列表 -->
 		<view class="exam-list">
 			<view class="list-header">
@@ -45,7 +56,7 @@
 					<text class="filter-btn" :class="{ active: filterType === 'completed' }" @click="setFilter('completed')">已完成</text>
 				</view>
 			</view>
-			
+
 			<scroll-view scroll-y class="exam-scroll">
 				<view class="exam-item" v-for="exam in filteredExams" :key="exam.id" @click="showExamDetail(exam)">
 					<view class="exam-status" :class="exam.status"></view>
@@ -72,7 +83,7 @@
 				</view>
 			</scroll-view>
 		</view>
-		
+
 		<!-- 考试详情弹窗 -->
 		<view class="popup-mask" v-if="showPopup" @click="closeExamDetail">
 			<view class="exam-detail" v-if="selectedExam" @click.stop>
@@ -121,6 +132,7 @@
 
 <script>
 import semesterCalculator from '../../utils/semester.js';
+import educationApi from '../../services/education-api.js';
 
 export default {
 	data() {
@@ -226,6 +238,7 @@ export default {
 	},
 	onLoad() {
 		this.initSemesterData();
+		this.loadExamData();
 	},
 	methods: {
 		initSemesterData() {
@@ -241,6 +254,42 @@ export default {
 		},
 		onSemesterChange(e) {
 			this.currentSemesterIndex = e.detail.value;
+			this.loadExamData();
+		},
+
+		async loadExamData() {
+			try {
+				uni.showLoading({
+					title: '加载考试安排...',
+					mask: true
+				});
+
+				const semester = this.semesterOptions[this.currentSemesterIndex];
+				const response = await educationApi.getExamsList(semester);
+
+				if (response.success && response.data.exams) {
+					// 更新考试数据，添加状态判断
+					this.exams = response.data.exams.map(exam => ({
+						...exam,
+						status: this.getExamStatus(exam.date)
+					}));
+					console.log('考试数据加载成功');
+				} else {
+					console.warn('考试数据为空，使用默认数据');
+					// 保持使用默认的模拟数据
+				}
+			} catch (error) {
+				console.error('加载考试数据失败:', error);
+				// 静默失败，使用模拟数据
+			} finally {
+				uni.hideLoading();
+			}
+		},
+
+		getExamStatus(examDate) {
+			const today = new Date();
+			const exam = new Date(examDate);
+			return exam > today ? 'upcoming' : 'completed';
 		},
 		setFilter(type) {
 			this.filterType = type;

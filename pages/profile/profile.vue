@@ -183,8 +183,13 @@ export default {
 			}
 		},
 
-		loadUserInfo() {
+		async loadUserInfo() {
 			try {
+				uni.showLoading({
+					title: '加载中...',
+					mask: true
+				});
+
 				const currentUser = authService.getCurrentUser();
 				if (currentUser) {
 					// 根据后端返回的用户信息结构更新
@@ -202,8 +207,31 @@ export default {
 						rank: currentUser.rank || '15/120'
 					};
 				}
+
+				// 尝试从API获取最新的用户统计信息
+				try {
+					const educationApi = (await import('../../services/education-api.js')).default;
+					const response = await educationApi.getUserStats();
+					if (response.success && response.data) {
+						this.userInfo = {
+							...this.userInfo,
+							totalCredits: response.data.totalCredits || this.userInfo.totalCredits,
+							gpa: response.data.gpa || this.userInfo.gpa,
+							rank: response.data.rank || this.userInfo.rank
+						};
+					}
+				} catch (apiError) {
+					console.log('获取用户统计信息失败，使用缓存数据:', apiError);
+				}
+
 			} catch (e) {
 				console.error('加载用户信息失败:', e);
+				uni.showToast({
+					title: '加载用户信息失败',
+					icon: 'none'
+				});
+			} finally {
+				uni.hideLoading();
 			}
 		},
 		navigateTo(url) {
@@ -292,16 +320,17 @@ export default {
 
 <style scoped>
 .container {
-	background-color: #f5f5f5;
+	background-color: var(--background-tertiary);
 	min-height: 100vh;
 }
 
 .user-card {
-	background: linear-gradient(135deg, #007AFF 0%, #5AC8FA 100%);
-	margin: 20rpx;
-	border-radius: 20rpx;
-	padding: 40rpx;
+	background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
+	margin: var(--spacing-md);
+	border-radius: var(--border-radius-lg);
+	padding: var(--spacing-xl);
 	color: white;
+	box-shadow: var(--shadow-md);
 }
 
 .avatar-section {
