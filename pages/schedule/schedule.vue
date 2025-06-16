@@ -204,8 +204,6 @@ export default {
 			this.updateWeekDays();
 
 			// 显示当前学期和周次信息
-			console.log('📅 课程表页面 - 当前学期:', this.currentSemester.name);
-			console.log('📅 课程表页面 - 当前周次:', currentWeekInfo.message);
 
 			// 如果不在学期时间内，显示提示
 			if (!currentWeekInfo.isValid) {
@@ -224,7 +222,6 @@ export default {
 
 			// 如果周次发生变化，更新显示
 			if (newWeekIndex !== this.currentWeekIndex) {
-				console.log('📅 检测到周次变化，从第', this.currentWeekIndex + 1, '周更新到第', newWeekIndex + 1, '周');
 				this.currentWeekIndex = newWeekIndex;
 				this.updateWeekDays();
 				this.loadScheduleData();
@@ -262,8 +259,6 @@ export default {
 			}
 		},
 		async loadScheduleData() {
-			console.log('加载课程表数据，周次:', this.currentWeekIndex + 1);
-
 			try {
 				// 使用新的教务API服务
 				const week = this.currentWeekIndex + 1;
@@ -271,13 +266,10 @@ export default {
 
 				if (response.success && response.data.courses) {
 					this.courses = this.formatScheduleData(response.data.courses);
-					console.log('课程表数据加载成功');
 				} else {
-					console.warn('课程表数据为空，使用默认数据');
 					// 保持使用默认的模拟数据
 				}
 			} catch (error) {
-				console.error('加载课程表失败:', error);
 				// 不显示错误提示，静默失败并使用模拟数据
 				// 这样可以确保在API不可用时仍能正常显示课程表
 			}
@@ -424,11 +416,24 @@ export default {
 	position: relative;
 }
 
-/* 今天的列头样式 */
+/* 今天的列头样式 - 更温和的视觉效果 */
 .today-column {
-	background-color: #E3F2FD;
-	border-left: 3rpx solid #1976D2;
-	border-right: 3rpx solid #1976D2;
+	background-color: #F3F8FF;
+	border-left: 2rpx solid #1976D2;
+	border-right: 2rpx solid #1976D2;
+	position: relative;
+}
+
+/* 添加微妙的渐变效果 */
+.today-column::after {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background: linear-gradient(180deg, rgba(25, 118, 210, 0.05) 0%, transparent 100%);
+	pointer-events: none;
 }
 
 .day-name {
@@ -494,11 +499,24 @@ export default {
 	position: relative;
 }
 
-/* 今天的课程单元格 */
+/* 今天的课程单元格 - 更温和的视觉效果 */
 .today-cell {
-	background-color: #F8FBFF;
-	border-left: 3rpx solid #1976D2;
-	border-right: 3rpx solid #1976D2;
+	background-color: #FAFCFF;
+	border-left: 2rpx solid #1976D2;
+	border-right: 2rpx solid #1976D2;
+	position: relative;
+}
+
+/* 添加微妙的渐变背景 */
+.today-cell::before {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background: linear-gradient(180deg, rgba(25, 118, 210, 0.02) 0%, transparent 100%);
+	pointer-events: none;
 }
 
 .course-item {
@@ -511,7 +529,7 @@ export default {
 	transition: all 0.3s ease;
 }
 
-/* 今天的课程特殊样式 - 更自然的视觉效果 */
+/* 今天的课程特殊样式 - 优化性能的视觉效果 */
 .course-item.today-course {
 	background: linear-gradient(135deg, #1976D2 0%, #42A5F5 100%);
 	color: white;
@@ -521,28 +539,40 @@ export default {
 		0 0 0 2rpx rgba(25, 118, 210, 0.2),
 		inset 0 1rpx 0 rgba(255, 255, 255, 0.2);
 	transform: translateY(-2rpx);
-	animation: todayPulse 3s ease-in-out infinite;
 	position: relative;
 	overflow: hidden;
+	/* 优化动画性能：使用will-change提示浏览器优化 */
+	will-change: box-shadow;
+	/* 减少动画频率，从3s改为4s，减少性能消耗 */
+	animation: todayPulse 4s ease-in-out infinite;
 }
 
-/* 添加微妙的呼吸动画 */
+/* 优化的呼吸动画 - 减少复杂度 */
 @keyframes todayPulse {
 	0%, 100% {
 		box-shadow:
 			0 6rpx 20rpx rgba(25, 118, 210, 0.4),
-			0 0 0 2rpx rgba(25, 118, 210, 0.2),
-			inset 0 1rpx 0 rgba(255, 255, 255, 0.2);
+			0 0 0 2rpx rgba(25, 118, 210, 0.2);
 	}
 	50% {
 		box-shadow:
 			0 8rpx 25rpx rgba(25, 118, 210, 0.5),
-			0 0 0 3rpx rgba(25, 118, 210, 0.3),
-			inset 0 1rpx 0 rgba(255, 255, 255, 0.3);
+			0 0 0 3rpx rgba(25, 118, 210, 0.3);
 	}
 }
 
-/* 添加发光边框效果 */
+/* 低性能设备的降级方案 */
+@media (prefers-reduced-motion: reduce) {
+	.course-item.today-course {
+		animation: none;
+		/* 静态的强调效果 */
+		box-shadow:
+			0 8rpx 25rpx rgba(25, 118, 210, 0.5),
+			0 0 0 3rpx rgba(25, 118, 210, 0.3);
+	}
+}
+
+/* 优化的发光边框效果 */
 .course-item.today-course::before {
 	content: '';
 	position: absolute;
@@ -551,8 +581,11 @@ export default {
 	right: 0;
 	bottom: 0;
 	background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.1) 50%, transparent 70%);
-	animation: shimmer 2s ease-in-out infinite;
+	/* 减少动画频率，从2s改为3s */
+	animation: shimmer 3s ease-in-out infinite;
 	pointer-events: none;
+	/* 优化性能 */
+	will-change: transform;
 }
 
 @keyframes shimmer {
@@ -561,6 +594,14 @@ export default {
 	}
 	100% {
 		transform: translateX(100%);
+	}
+}
+
+/* 低性能设备禁用闪烁效果 */
+@media (prefers-reduced-motion: reduce) {
+	.course-item.today-course::before {
+		animation: none;
+		opacity: 0;
 	}
 }
 
@@ -791,7 +832,7 @@ export default {
 	line-height: 1.4;
 }
 
-/* 弹窗遮罩层 - 添加动画效果 */
+/* 弹窗遮罩层 - 优化性能和兼容性 */
 .popup-mask {
 	position: fixed;
 	top: 0;
@@ -803,18 +844,25 @@ export default {
 	justify-content: center;
 	align-items: center;
 	z-index: 1000;
+	/* 降级方案：优先使用backdrop-filter，不支持时使用普通背景 */
 	backdrop-filter: blur(4rpx);
+	-webkit-backdrop-filter: blur(4rpx);
 	animation: fadeIn 0.3s ease-out;
+}
+
+/* 不支持backdrop-filter的降级方案 */
+@supports not (backdrop-filter: blur(4rpx)) {
+	.popup-mask {
+		background-color: rgba(0, 0, 0, 0.75);
+	}
 }
 
 @keyframes fadeIn {
 	from {
 		opacity: 0;
-		backdrop-filter: blur(0);
 	}
 	to {
 		opacity: 1;
-		backdrop-filter: blur(4rpx);
 	}
 }
 </style>

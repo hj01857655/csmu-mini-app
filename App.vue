@@ -1,19 +1,17 @@
 <script>
 	export default {
 		onLaunch: function() {
-			console.log('App Launch');
 			this.checkLoginStatus();
 		},
 		onShow: function() {
-			console.log('App Show');
+			// App显示时的处理
 		},
 		onHide: function() {
-			console.log('App Hide');
+			// App隐藏时的处理
 		},
 		methods: {
 			checkLoginStatus() {
 				// 简化登录检查，在各个页面的onLoad中处理
-				console.log('检查登录状态');
 			}
 		}
 	}

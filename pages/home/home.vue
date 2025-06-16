@@ -297,10 +297,6 @@ export default {
 
 			// 如果学期信息发生变化，更新显示
 			if (newSemesterInfo !== this.currentSemesterInfo) {
-				console.log('🏠 检测到学期信息变化:', {
-					旧信息: this.currentSemesterInfo,
-					新信息: newSemesterInfo
-				});
 				this.currentSemesterInfo = newSemesterInfo;
 			}
 		},
@@ -388,7 +384,6 @@ export default {
 					};
 				}
 			} catch (error) {
-				console.error('加载用户信息失败:', error);
 				// 保持使用本地存储的用户信息作为备用
 				this.loadUserInfo();
 			} finally {
@@ -419,7 +414,6 @@ export default {
 					}));
 				}
 			} catch (error) {
-				console.error('加载今日课程失败:', error);
 				// 使用原有的模拟数据逻辑
 				this.loadTodayCourses();
 			} finally {
@@ -450,7 +444,6 @@ export default {
 					}));
 				}
 			} catch (error) {
-				console.error('加载校园通知失败:', error);
 				// 保持使用模拟数据
 			} finally {
 				this.loadingStates.notices = false;
@@ -471,7 +464,6 @@ export default {
 					this.attendanceRate = response.data.attendanceRate || this.attendanceRate;
 				}
 			} catch (error) {
-				console.error('加载学习统计失败:', error);
 				// 保持使用默认数据
 			} finally {
 				this.loadingStates.studyStats = false;
