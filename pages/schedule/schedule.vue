@@ -1,45 +1,56 @@
 <template>
 	<view class="container">
-		<!-- 学年学期选择器 - 紧凑版 -->
-		<view class="semester-selector">
+		<!-- 导入统一设计系统 -->
+		<style>
+			@import url("../../styles/design-system.css");
+		</style>
+		<!-- 学年学期选择器 - 使用统一设计系统 -->
+		<view class="container-base container-compact">
+			<view class="accent-line"></view>
 			<view class="semester-main-area">
 				<view class="semester-picker-container">
 					<picker mode="selector" :value="currentSemesterIndex" :range="allSemesterOptions" range-key="displayName" @change="onSemesterChange">
-						<view class="semester-picker-enhanced" :class="{ 'picker-current': isCurrentSemesterSelected }">
-							<view class="picker-content">
+						<view class="picker-base semester-picker" :class="{ 'picker-current': isCurrentSemesterSelected }">
+							<view class="picker-content picker-content-compact">
 								<view class="picker-left">
 									<text class="picker-label">📚</text>
-									<text class="picker-main-text">{{ allSemesterOptions[currentSemesterIndex]?.displayName || '选择学年学期' }}</text>
+									<text class="picker-text">{{ allSemesterOptions[currentSemesterIndex]?.displayName || '选择学年学期' }}</text>
 								</view>
 								<view class="picker-right">
 									<!-- 快速跳转按钮 - 内联显示 -->
-									<button class="quick-jump-btn" v-if="!isCurrentSemesterSelected" @click="jumpToCurrentSemester">
+									<button class="btn-base btn-accent btn-small quick-jump-btn" v-if="!isCurrentSemesterSelected" @click="jumpToCurrentSemester">
 										<text class="quick-jump-text">当前</text>
 									</button>
 									<view class="picker-indicator">
-										<text class="arrow-icon">▼</text>
+										<text class="picker-arrow">▼</text>
 									</view>
 								</view>
 							</view>
+							<view class="bottom-accent-line"></view>
 						</view>
 					</picker>
 				</view>
 			</view>
 		</view>
 
-		<!-- 周次选择器 -->
-		<view class="week-selector">
+		<!-- 周次选择器 - 使用统一设计系统 -->
+		<view class="container-base container-compact week-selector">
+			<view class="accent-line"></view>
 			<view class="week-navigation">
-				<button class="week-btn prev-btn" @click="prevWeek" :disabled="currentWeekIndex <= 0">
+				<button class="btn-base btn-primary btn-small week-btn" @click="prevWeek" :disabled="currentWeekIndex <= 0">
 					<text class="btn-icon">‹</text>
 				</button>
 				<picker mode="selector" :value="currentWeekIndex" :range="weekOptions" @change="onWeekChange">
-					<view class="picker-text">
-						{{ weekOptions[currentWeekIndex] }}
-						<text class="arrow">▼</text>
+					<view class="picker-base week-picker">
+						<view class="picker-content picker-content-compact">
+							<text class="picker-text picker-text-small">{{ weekOptions[currentWeekIndex] }}</text>
+							<view class="picker-indicator">
+								<text class="picker-arrow">▼</text>
+							</view>
+						</view>
 					</view>
 				</picker>
-				<button class="week-btn next-btn" @click="nextWeek" :disabled="currentWeekIndex >= weekOptions.length - 1">
+				<button class="btn-base btn-primary btn-small week-btn" @click="nextWeek" :disabled="currentWeekIndex >= weekOptions.length - 1">
 					<text class="btn-icon">›</text>
 				</button>
 			</view>
@@ -563,25 +574,7 @@ export default {
 	min-height: 100vh;
 }
 
-/* ===== 学年学期选择器紧凑优化样式 ===== */
-.semester-selector {
-	background: #ffffff;
-	padding: 12rpx 16rpx;
-	border-bottom: 1rpx solid #e8eaed;
-	position: relative;
-}
-
-/* 简化的顶部装饰线 */
-.semester-selector::before {
-	content: '';
-	position: absolute;
-	top: 0;
-	left: 0;
-	right: 0;
-	height: 2rpx;
-	background: linear-gradient(90deg, transparent, #1976D2, transparent);
-	opacity: 0.6;
-}
+/* ===== 页面特定样式（使用设计系统变量） ===== */
 
 /* 主选择器区域 */
 .semester-main-area {
@@ -594,163 +587,53 @@ export default {
 	position: relative;
 }
 
-/* 紧凑的选择器样式 */
-.semester-picker-enhanced {
-	background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
-	border: 1rpx solid #e3f2fd;
-	border-radius: 12rpx;
-	padding: 0;
-	box-shadow:
-		0 4rpx 12rpx rgba(25, 118, 210, 0.08),
-		0 2rpx 4rpx rgba(25, 118, 210, 0.04);
-	transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-	position: relative;
-	overflow: hidden;
+/* 学年学期选择器特定样式 */
+.semester-picker {
+	/* 继承 picker-base 的所有样式 */
 }
 
 /* 当前学期特殊样式 */
-.semester-picker-enhanced.picker-current {
-	border-color: #1976D2;
+.semester-picker.picker-current {
+	border-color: var(--primary-color);
 	background: linear-gradient(135deg, #e3f2fd 0%, #f3f8ff 100%);
-	box-shadow:
-		0 4rpx 12rpx rgba(25, 118, 210, 0.15),
-		0 2rpx 4rpx rgba(25, 118, 210, 0.1);
-}
-
-/* hover状态 - 减少动画幅度 */
-.semester-picker-enhanced:hover {
-	transform: translateY(-1rpx);
-	border-color: #1976D2;
-	box-shadow:
-		0 6rpx 16rpx rgba(25, 118, 210, 0.12),
-		0 3rpx 6rpx rgba(25, 118, 210, 0.08);
-}
-
-/* active状态 */
-.semester-picker-enhanced:active {
-	transform: translateY(0) scale(0.99);
-	box-shadow:
-		0 2rpx 8rpx rgba(25, 118, 210, 0.15),
-		0 1rpx 4rpx rgba(25, 118, 210, 0.1);
-}
-
-/* 紧凑的选择器内容 */
-.picker-content {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	padding: 14rpx 18rpx;
-	min-height: 56rpx;
+	box-shadow: var(--shadow-primary-md);
 }
 
 .picker-left {
 	display: flex;
 	align-items: center;
-	gap: 8rpx;
+	gap: var(--spacing-sm);
 	flex: 1;
 }
 
 .picker-label {
-	font-size: 24rpx;
+	font-size: var(--font-size-md);
 	opacity: 0.8;
 }
 
-.picker-main-text {
-	font-size: 26rpx;
-	font-weight: 600;
-	color: #1976D2;
-	letter-spacing: 0.3rpx;
-	flex: 1;
-}
-
-.picker-current .picker-main-text {
-	color: #0D47A1;
-	font-weight: 700;
+.picker-current .picker-text {
+	color: var(--primary-dark);
+	font-weight: var(--font-weight-bold);
 }
 
 .picker-right {
 	display: flex;
 	align-items: center;
-	gap: 8rpx;
+	gap: var(--spacing-sm);
 }
 
-/* 紧凑的快速跳转按钮 */
+/* 快速跳转按钮特定样式 */
 .quick-jump-btn {
-	display: flex;
-	align-items: center;
-	padding: 4rpx 8rpx;
-	background: linear-gradient(135deg, #FF6B35 0%, #FF8E53 100%);
-	color: white;
-	border-radius: 12rpx;
-	font-size: 18rpx;
-	border: none;
-	box-shadow: 0 2rpx 6rpx rgba(255, 107, 53, 0.25);
-	transition: all 0.3s ease;
 	min-width: 48rpx;
 	height: 32rpx;
 }
 
-.quick-jump-btn:hover {
-	transform: scale(1.05);
-	box-shadow: 0 3rpx 8rpx rgba(255, 107, 53, 0.35);
-}
-
-.quick-jump-btn:active {
-	transform: scale(0.95);
-	box-shadow: 0 1rpx 4rpx rgba(255, 107, 53, 0.3);
-}
-
 .quick-jump-text {
-	font-weight: 600;
-	font-size: 18rpx;
+	font-size: var(--font-size-sm);
 	line-height: 1;
 }
 
-.picker-indicator {
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	width: 32rpx;
-	height: 32rpx;
-	background: rgba(25, 118, 210, 0.1);
-	border-radius: 50%;
-	transition: all 0.3s ease;
-}
-
-.semester-picker-enhanced:hover .picker-indicator {
-	background: rgba(25, 118, 210, 0.2);
-	transform: scale(1.05);
-}
-
-.arrow-icon {
-	font-size: 16rpx;
-	color: #1976D2;
-	font-weight: bold;
-	transition: transform 0.3s ease;
-}
-
-.semester-picker-enhanced:active .arrow-icon {
-	transform: rotate(180deg);
-}
-
-/* ===== 周次选择器紧凑优化样式 ===== */
-.week-selector {
-	background: #f8f9fa;
-	padding: 12rpx 16rpx;
-	border-bottom: 1rpx solid #e8eaed;
-	position: relative;
-}
-
-/* 简化的分隔线 */
-.week-selector::before {
-	content: '';
-	position: absolute;
-	top: 0;
-	left: 16rpx;
-	right: 16rpx;
-	height: 1rpx;
-	background: linear-gradient(90deg, transparent, rgba(25, 118, 210, 0.15), transparent);
-}
+/* ===== 周次选择器样式（使用设计系统） ===== */
 
 .week-navigation {
 	display: flex;
@@ -758,110 +641,36 @@ export default {
 	justify-content: center;
 	max-width: 680rpx;
 	margin: 0 auto;
-	gap: 12rpx;
+	gap: var(--spacing-md);
 }
 
-/* 紧凑的周次导航按钮 */
+/* 周次导航按钮 */
 .week-btn {
 	width: 56rpx;
 	height: 56rpx;
-	border: 1rpx solid #e3f2fd;
-	background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
-	border-radius: 10rpx;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	box-shadow:
-		0 2rpx 8rpx rgba(25, 118, 210, 0.06),
-		0 1rpx 3rpx rgba(25, 118, 210, 0.04);
-	transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-	position: relative;
-	overflow: hidden;
-}
-
-.week-btn:hover {
-	border-color: #1976D2;
-	transform: translateY(-1rpx);
-	box-shadow:
-		0 4rpx 12rpx rgba(25, 118, 210, 0.1),
-		0 2rpx 6rpx rgba(25, 118, 210, 0.08);
-}
-
-.week-btn:active {
-	transform: translateY(0) scale(0.95);
-	box-shadow:
-		0 1rpx 4rpx rgba(25, 118, 210, 0.15),
-		0 1rpx 2rpx rgba(25, 118, 210, 0.1);
+	border-radius: var(--border-radius-sm);
 }
 
 .week-btn:disabled {
-	border-color: #e0e0e0;
-	background: #f5f5f5;
+	background: var(--background-tertiary);
+	border-color: var(--border-color);
 	transform: none;
 	box-shadow: none;
 	cursor: not-allowed;
 }
 
 .week-btn:disabled .btn-icon {
-	color: #bdbdbd;
+	color: var(--text-disabled);
 }
 
 .btn-icon {
-	font-size: 22rpx;
-	color: #1976D2;
-	font-weight: 700;
-	transition: all 0.3s ease;
+	font-size: var(--font-size-md);
+	font-weight: var(--font-weight-bold);
 }
 
-.week-btn:hover .btn-icon {
-	color: #0D47A1;
-	transform: scale(1.05);
-}
-
-/* 紧凑的周次选择器主体 */
-.picker-text {
-	text-align: center;
-	font-size: 24rpx;
-	color: #1976D2;
-	font-weight: 600;
-	padding: 12rpx 24rpx;
-	border: 1rpx solid #e3f2fd;
-	border-radius: 10rpx;
-	background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+/* 周次选择器主体 */
+.week-picker {
 	min-width: 280rpx;
-	box-shadow:
-		0 2rpx 8rpx rgba(25, 118, 210, 0.06),
-		0 1rpx 3rpx rgba(25, 118, 210, 0.04);
-	transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-	position: relative;
-	overflow: hidden;
-}
-
-.picker-text:hover {
-	border-color: #1976D2;
-	transform: translateY(-1rpx);
-	box-shadow:
-		0 4rpx 12rpx rgba(25, 118, 210, 0.1),
-		0 2rpx 6rpx rgba(25, 118, 210, 0.08);
-}
-
-.picker-text:active {
-	transform: translateY(0) scale(0.99);
-	box-shadow:
-		0 1rpx 4rpx rgba(25, 118, 210, 0.12),
-		0 1rpx 2rpx rgba(25, 118, 210, 0.08);
-}
-
-.arrow {
-	margin-left: 8rpx;
-	font-size: 16rpx;
-	font-weight: bold;
-	transition: transform 0.3s ease;
-	display: inline-block;
-}
-
-.picker-text:active .arrow {
-	transform: rotate(180deg);
 }
 
 /* ===== 响应式设计优化 ===== */
