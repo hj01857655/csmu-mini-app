@@ -1,6 +1,7 @@
 /**
  * 应用配置文件
  * 统一管理应用的各种配置信息
+ * 兼容小程序环境，不使用 process.env
  */
 
 // 环境配置
@@ -10,20 +11,39 @@ const ENV = {
 	TEST: 'test'
 };
 
-// 当前环境（可以通过编译时变量或其他方式动态设置）
-const CURRENT_ENV = ENV.DEVELOPMENT;
+// 小程序环境兼容的环境变量获取函数
+const getEnvVar = (key, defaultValue = '') => {
+	// 在小程序环境中，环境变量通常在编译时注入或通过其他方式配置
+	// 这里提供一个兼容的实现
+	if (typeof process !== 'undefined' && process.env) {
+		return process.env[key] || defaultValue;
+	}
 
-// API配置 - 支持环境变量
+	// 小程序环境下的备用配置
+	const envConfig = {
+		'NODE_ENV': 'development',
+		'VUE_APP_API_BASE_URL': '',
+		'VUE_APP_ENABLE_MOCK': 'true',
+		'VUE_APP_DEBUG': 'true'
+	};
+
+	return envConfig[key] || defaultValue;
+};
+
+// 当前环境（可以通过编译时变量或其他方式动态设置）
+const CURRENT_ENV = getEnvVar('NODE_ENV') === 'production' ? ENV.PRODUCTION : ENV.DEVELOPMENT;
+
+// API配置 - 兼容小程序环境
 const API_CONFIG = {
 	[ENV.DEVELOPMENT]: {
-		BASE_URL: process.env.VUE_APP_API_BASE_URL || 'http://localhost:8000/api/v1',
+		BASE_URL: getEnvVar('VUE_APP_API_BASE_URL') || 'http://localhost:8000/api/v1',
 		TIMEOUT: 10000,
 		RETRY_TIMES: 3,
 		ENABLE_MOCK: true
 	},
 	[ENV.PRODUCTION]: {
 		// 🚀 生产环境配置 - 部署时请更新
-		BASE_URL: process.env.VUE_APP_API_BASE_URL || 'https://api.csmu.edu.cn/api/v1',
+		BASE_URL: getEnvVar('VUE_APP_API_BASE_URL') || 'https://api.csmu.edu.cn/api/v1',
 		TIMEOUT: 15000,
 		RETRY_TIMES: 2,
 		ENABLE_MOCK: false,
@@ -31,7 +51,7 @@ const API_CONFIG = {
 		ENABLE_COMPRESSION: true
 	},
 	[ENV.TEST]: {
-		BASE_URL: process.env.VUE_APP_API_BASE_URL || 'https://test-api.csmu.edu.cn/api/v1',
+		BASE_URL: getEnvVar('VUE_APP_API_BASE_URL') || 'https://test-api.csmu.edu.cn/api/v1',
 		TIMEOUT: 8000,
 		RETRY_TIMES: 1,
 		ENABLE_MOCK: false
