@@ -102,10 +102,7 @@
 
 		</view>
 
-		<!-- 开发环境测试按钮 -->
-		<view class="dev-test-section" v-if="showTestButton">
-			<button class="test-btn" @click="runEncryptionTest">🧪 测试加密功能</button>
-		</view>
+
 
 		<!-- 底部信息 -->
 		<view class="footer">
@@ -132,8 +129,7 @@
 
 <script>
 import authService from '../../services/auth.js';
-import secureStorage from '../../utils/secure-storage.js';
-import encryptionTest from '../../utils/encryption-test.js';
+import simpleStorage from '../../utils/simple-storage.js';
 
 
 export default {
@@ -149,8 +145,7 @@ export default {
 			isTeacherMode: false,  // 是否为教师登录模式
 			showHistoryDropdown: false,  // 是否显示历史记录下拉
 			currentHistory: [],  // 当前模式的历史记录
-			dropdownBlurTimer: null,  // 下拉框失焦定时器
-			showTestButton: process.env.NODE_ENV === 'development'  // 开发环境显示测试按钮
+			dropdownBlurTimer: null  // 下拉框失焦定时器
 		}
 	},
 	computed: {
@@ -167,8 +162,8 @@ export default {
 	created() {
 		// 确保响应式属性正确初始化
 		this.isTeacherMode = false;
-		// 数据迁移和验证
-		this.initializeSecureStorage();
+		// 简单存储初始化
+		this.initializeSimpleStorage();
 	},
 	onLoad() {
 		this.checkLoginStatus();
@@ -188,7 +183,7 @@ export default {
 
 		loadSavedCredentials() {
 			try {
-				const saved = secureStorage.getRememberedCredentials();
+				const saved = simpleStorage.getRememberedCredentials();
 				if (saved && saved.userType === (this.isTeacherMode ? 'teacher' : 'student')) {
 					this.loginForm.studentId = saved.studentId || '';
 					this.loginForm.password = saved.password || '';
@@ -204,17 +199,17 @@ export default {
 
 			if (this.rememberMe) {
 				// 保存记住的凭据
-				secureStorage.saveRememberedCredentials({
+				simpleStorage.saveRememberedCredentials({
 					studentId: this.loginForm.studentId,
 					password: this.loginForm.password
 				}, userType);
 			} else {
 				// 清除记住的凭据
-				secureStorage.clearRememberedCredentials();
+				simpleStorage.clearRememberedCredentials();
 			}
 
 			// 总是添加到历史记录
-			secureStorage.addToHistory({
+			simpleStorage.addToHistory({
 				studentId: this.loginForm.studentId,
 				password: this.loginForm.password
 			}, userType);
@@ -225,7 +220,7 @@ export default {
 
 		loadHistoryAccounts() {
 			const userType = this.isTeacherMode ? 'teacher' : 'student';
-			this.currentHistory = secureStorage.getDecryptedHistory(userType);
+			this.currentHistory = simpleStorage.getDecryptedHistory(userType);
 		},
 
 		async handleLogin() {
@@ -336,7 +331,7 @@ export default {
 
 		deleteHistoryItem(studentId) {
 			const userType = this.isTeacherMode ? 'teacher' : 'student';
-			secureStorage.removeFromHistory(studentId, userType);
+			simpleStorage.removeFromHistory(studentId, userType);
 			this.loadHistoryAccounts();
 
 			uni.showToast({
@@ -353,7 +348,7 @@ export default {
 				success: (res) => {
 					if (res.confirm) {
 						const userType = this.isTeacherMode ? 'teacher' : 'student';
-						secureStorage.clearHistory(userType);
+						simpleStorage.clearHistory(userType);
 						this.loadHistoryAccounts();
 						this.showHistoryDropdown = false;
 
@@ -390,51 +385,24 @@ export default {
 			}
 		},
 
-		// 初始化安全存储
-		async initializeSecureStorage() {
+		// 初始化简单存储
+		async initializeSimpleStorage() {
 			try {
-				// 执行数据迁移和验证
-				const migrationSuccess = secureStorage.migrateAndValidateData();
-				if (migrationSuccess) {
-					console.info('安全存储初始化成功');
-				} else {
-					console.warn('数据迁移过程中出现问题，但系统仍可正常使用');
+				// 清理过期数据
+				const cleanSuccess = simpleStorage.migrateAndValidateData();
+				if (cleanSuccess) {
+					console.info('简单存储初始化成功');
 				}
 
-				// 清理过期数据
-				secureStorage.cleanExpiredData();
-
 				// 验证存储完整性
-				secureStorage.validateStorageIntegrity();
+				simpleStorage.validateStorageIntegrity();
 			} catch (e) {
-				console.error('安全存储初始化失败:', e);
+				console.error('简单存储初始化失败:', e);
 				// 即使初始化失败，也不影响正常登录功能
 			}
 		},
 
-		// 开发环境测试功能
-		runEncryptionTest() {
-			if (process.env.NODE_ENV !== 'development') {
-				return;
-			}
 
-			try {
-				console.log('🧪 开始加密解密测试...');
-				const results = encryptionTest.runFullTestSuite();
-
-				uni.showModal({
-					title: '测试完成',
-					content: `测试结果：${results.passCount} 通过，${results.failCount} 失败\n\n请查看控制台获取详细信息`,
-					showCancel: false
-				});
-			} catch (e) {
-				console.error('测试执行失败:', e);
-				uni.showToast({
-					title: '测试执行失败',
-					icon: 'none'
-				});
-			}
-		},
 
 
 
