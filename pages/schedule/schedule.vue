@@ -21,8 +21,14 @@
 		<!-- 课程表头部 -->
 		<view class="schedule-header">
 			<view class="time-column">时间</view>
-			<view class="day-column" v-for="day in weekDays" :key="day.key">
-				<view class="day-name">{{ day.name }}</view>
+			<view class="day-column"
+				  v-for="day in weekDays"
+				  :key="day.key"
+				  :class="{ 'today-column': isCurrentWeek && day.key === todayDayKey }">
+				<view class="day-name">
+					{{ day.name }}
+					<text class="today-badge" v-if="isCurrentWeek && day.key === todayDayKey">今天</text>
+				</view>
 				<view class="day-date">{{ day.date }}</view>
 			</view>
 		</view>
@@ -34,14 +40,23 @@
 					<view class="period">{{ time.period }}</view>
 					<view class="time-range">{{ time.time }}</view>
 				</view>
-				<view class="course-cell" v-for="day in weekDays" :key="day.key">
+				<view class="course-cell"
+					  v-for="day in weekDays"
+					  :key="day.key"
+					  :class="{ 'today-cell': isCurrentWeek && day.key === todayDayKey }">
 					<view v-if="getCourse(day.key, index)"
 						  class="course-item"
-						  :class="getCourse(day.key, index).type"
+						  :class="[
+							  getCourse(day.key, index).type,
+							  { 'today-course': isCurrentWeek && day.key === todayDayKey }
+						  ]"
 						  @click="showCourseDetail(getCourse(day.key, index))">
 						<view class="course-name">{{ getCourse(day.key, index).name }}</view>
 						<view class="course-location">{{ getCourse(day.key, index).location }}</view>
 						<view class="course-teacher">{{ getCourse(day.key, index).teacher }}</view>
+						<view class="today-indicator" v-if="isCurrentWeek && day.key === todayDayKey">
+							<text class="today-text">今日</text>
+						</view>
 					</view>
 				</view>
 			</view>
@@ -138,6 +153,23 @@ export default {
 			},
 			selectedCourse: null,
 			showPopup: false
+		}
+	},
+	computed: {
+		// 获取今天是星期几
+		todayDayKey() {
+			const today = new Date();
+			const dayOfWeek = today.getDay(); // 0=周日, 1=周一, ..., 6=周六
+			const dayMap = {
+				0: 'sun', 1: 'mon', 2: 'tue', 3: 'wed',
+				4: 'thu', 5: 'fri', 6: 'sat'
+			};
+			return dayMap[dayOfWeek];
+		},
+		// 判断当前显示的周是否为本周
+		isCurrentWeek() {
+			const currentWeekInfo = semesterCalculator.getCurrentWeekCached();
+			return this.currentWeekIndex + 1 === currentWeekInfo.week;
 		}
 	},
 	onLoad() {
@@ -392,12 +424,32 @@ export default {
 	padding: 15rpx 5rpx;
 	text-align: center;
 	border-left: 1rpx solid #e5e5e5;
+	position: relative;
+}
+
+/* 今天的列头样式 */
+.today-column {
+	background-color: #E3F2FD;
+	border-left: 3rpx solid #1976D2;
+	border-right: 3rpx solid #1976D2;
 }
 
 .day-name {
 	font-size: 28rpx;
 	font-weight: bold;
 	color: #333;
+	position: relative;
+}
+
+/* 今天标识 */
+.today-badge {
+	background-color: #1976D2;
+	color: white;
+	font-size: 18rpx;
+	padding: 2rpx 8rpx;
+	border-radius: 10rpx;
+	margin-left: 8rpx;
+	font-weight: normal;
 }
 
 .day-date {
@@ -442,6 +494,14 @@ export default {
 	padding: 10rpx 5rpx;
 	border-left: 1rpx solid #e5e5e5;
 	min-height: 100rpx;
+	position: relative;
+}
+
+/* 今天的课程单元格 */
+.today-cell {
+	background-color: #F8FBFF;
+	border-left: 3rpx solid #1976D2;
+	border-right: 3rpx solid #1976D2;
 }
 
 .course-item {
@@ -450,6 +510,23 @@ export default {
 	padding: 15rpx 10rpx;
 	height: 100%;
 	border-left: 6rpx solid #2196f3;
+	position: relative;
+	transition: all 0.3s ease;
+}
+
+/* 今天的课程特殊样式 */
+.course-item.today-course {
+	background-color: #1976D2;
+	color: white;
+	border-left: 6rpx solid #0D47A1;
+	box-shadow: 0 4rpx 12rpx rgba(25, 118, 210, 0.3);
+	transform: scale(1.02);
+}
+
+.course-item.today-course .course-name,
+.course-item.today-course .course-location,
+.course-item.today-course .course-teacher {
+	color: white;
 }
 
 .course-item.math {
@@ -498,6 +575,23 @@ export default {
 .course-teacher {
 	font-size: 20rpx;
 	color: #999;
+}
+
+/* 今日指示器 */
+.today-indicator {
+	position: absolute;
+	top: 5rpx;
+	right: 5rpx;
+	background-color: #FF5722;
+	border-radius: 20rpx;
+	padding: 2rpx 8rpx;
+	z-index: 10;
+}
+
+.today-text {
+	font-size: 16rpx;
+	color: white;
+	font-weight: bold;
 }
 
 .course-detail {

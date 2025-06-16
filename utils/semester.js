@@ -488,60 +488,16 @@ class SemesterCalculator {
 		const semester = this.getCurrentSemester(testDate);
 		const weekInfo = this.getCurrentWeek(testDate);
 
-		console.log('📅 测试日期:', dateFormatter.formatDateTime(testDate, 'chinese'));
-		console.log('📚 当前学期:', semester.name);
-		console.log('📅 学期开始:', semester.startDate);
-		console.log('📊 计算结果:', weekInfo);
 
-		// 手动验证计算
-		const startDate = new Date(semester.startDate);
-		const current = new Date(testDate);
-
-		// 计算天数差
-		const timeDiff = current.getTime() - startDate.getTime();
-		const daysDiff = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
-
-		console.log('🧮 手动验证:');
-		console.log('  - 时间差(毫秒):', timeDiff);
-		console.log('  - 天数差:', daysDiff);
-		console.log('  - 简单周次计算:', Math.floor(daysDiff / 7) + 1);
-
-		// 验证特定日期
-		const testCases = [
-			{ date: '2025-02-17', expectedWeek: 1, description: '学期第一天（周一）' },
-			{ date: '2025-02-23', expectedWeek: 1, description: '第一周周日' },
-			{ date: '2025-02-24', expectedWeek: 2, description: '第二周周一' },
-			{ date: '2025-06-16', expectedWeek: 18, description: '当前日期' },
-			{ date: '2025-06-22', expectedWeek: 18, description: '当前周周日' },
-			{ date: '2025-06-23', expectedWeek: 19, description: '下周周一' }
-		];
-
-		console.log('🧪 测试用例验证:');
-		testCases.forEach(testCase => {
-			const testResult = this.getCurrentWeek(new Date(testCase.date));
-			const isCorrect = testResult.week === testCase.expectedWeek;
-			console.log(`  ${isCorrect ? '✅' : '❌'} ${testCase.description}: 期望第${testCase.expectedWeek}周, 实际第${testResult.week}周`);
-		});
-
-		console.groupEnd();
 
 		return {
 			currentWeek: weekInfo.week,
 			isValid: weekInfo.isValid,
-			semester: semester,
-			testDate: dateFormatter.formatDateTime(testDate, 'chinese')
+			semester: semester
 		};
 	}
 
-	/**
-	 * 获取指定日期的周次信息（用于调试）
-	 * @param {string} dateString - 日期字符串 (YYYY-MM-DD)
-	 * @returns {Object} 周次信息
-	 */
-	getWeekByDate(dateString) {
-		const date = new Date(dateString);
-		return this.getCurrentWeek(date);
-	}
+
 }
 
 // 创建全局实例
