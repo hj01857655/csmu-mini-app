@@ -196,7 +196,7 @@ class EnvironmentConfigValidator {
 
 		// 根据环境输出不同级别的日志
 		const validation = this.validateApiConfig(apiConfig);
-		
+
 		if (!validation.isValid) {
 			console.error('🚨 API配置验证失败，请检查配置！');
 		} else if (validation.warnings.length > 0) {
@@ -223,7 +223,7 @@ class EnvironmentConfigValidator {
 					fail: reject
 				});
 			});
-			
+
 			return response.statusCode === 200;
 		} catch (error) {
 			console.warn('网络连接检查失败:', error.errMsg || error.message);
@@ -239,7 +239,7 @@ class EnvironmentConfigValidator {
 	getEnvironmentRecommendations(environment) {
 		const recommendations = {
 			development: {
-				baseURL: 'http://localhost:3000/api',
+				baseURL: 'http://localhost:8000/api',
 				timeout: 10000,
 				enableMock: true,
 				description: '开发环境建议使用本地API服务器和模拟数据'
