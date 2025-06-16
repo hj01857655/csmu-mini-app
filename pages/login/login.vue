@@ -41,12 +41,12 @@
 				</view>
 
 				<!-- 历史账号下拉列表 -->
-				<view class="history-dropdown" v-if="showHistoryDropdown && hasHistory">
+				<view class="history-dropdown" v-if="showHistoryDropdown">
 					<view class="history-header">
 						<text class="history-title">最近登录</text>
-						<text class="clear-history" @click="clearAllHistory">清空</text>
+						<text class="clear-history" @click="clearAllHistory" v-if="hasHistory">清空</text>
 					</view>
-					<scroll-view class="history-list" scroll-y="true">
+					<scroll-view class="history-list" scroll-y="true" v-if="hasHistory">
 						<view
 							class="history-item"
 							v-for="(item, index) in currentHistory"
@@ -62,6 +62,10 @@
 							</view>
 						</view>
 					</scroll-view>
+					<view class="no-history" v-if="!hasHistory">
+						<text class="no-history-text">暂无历史登录记录</text>
+						<text class="no-history-hint">成功登录后会自动保存到这里</text>
+					</view>
 				</view>
 
 				<view class="input-item">
@@ -102,7 +106,12 @@
 
 		</view>
 
-
+		<!-- 调试按钮 -->
+		<view class="debug-section" v-if="showDebugButtons">
+			<button class="debug-btn" @click="debugHistoryFunction">🔍 调试历史功能</button>
+			<button class="debug-btn" @click="addTestHistory">➕ 添加测试历史</button>
+			<button class="debug-btn" @click="clearTestHistory">🗑️ 清空历史</button>
+		</view>
 
 		<!-- 底部信息 -->
 		<view class="footer">
@@ -145,7 +154,8 @@ export default {
 			isTeacherMode: false,  // 是否为教师登录模式
 			showHistoryDropdown: false,  // 是否显示历史记录下拉
 			currentHistory: [],  // 当前模式的历史记录
-			dropdownBlurTimer: null  // 下拉框失焦定时器
+			dropdownBlurTimer: null,  // 下拉框失焦定时器
+			showDebugButtons: process.env.NODE_ENV === 'development'  // 开发环境显示调试按钮
 		}
 	},
 	computed: {
@@ -166,9 +176,11 @@ export default {
 		this.initializeSimpleStorage();
 	},
 	onLoad() {
+		console.log('🔍 onLoad - 页面加载开始');
 		this.checkLoginStatus();
 		this.loadSavedCredentials();
 		this.loadHistoryAccounts();
+		console.log('🔍 onLoad - 页面加载完成');
 	},
 	methods: {
 		togglePassword() {
@@ -220,7 +232,13 @@ export default {
 
 		loadHistoryAccounts() {
 			const userType = this.isTeacherMode ? 'teacher' : 'student';
+			console.log('🔍 loadHistoryAccounts - 用户类型:', userType);
+
 			this.currentHistory = simpleStorage.getDecryptedHistory(userType);
+
+			console.log('🔍 loadHistoryAccounts - 历史记录数量:', this.currentHistory.length);
+			console.log('🔍 loadHistoryAccounts - 历史记录数据:', this.currentHistory);
+			console.log('🔍 loadHistoryAccounts - hasHistory计算结果:', this.hasHistory);
 		},
 
 		async handleLogin() {
@@ -296,10 +314,20 @@ export default {
 
 		// 历史账号相关方法
 		toggleHistoryDropdown() {
+			console.log('🔍 toggleHistoryDropdown - 点击前状态:', this.showHistoryDropdown);
+			console.log('🔍 toggleHistoryDropdown - hasHistory:', this.hasHistory);
+			console.log('🔍 toggleHistoryDropdown - currentHistory长度:', this.currentHistory.length);
+
 			this.showHistoryDropdown = !this.showHistoryDropdown;
+
+			console.log('🔍 toggleHistoryDropdown - 点击后状态:', this.showHistoryDropdown);
+
 			if (this.showHistoryDropdown) {
 				this.loadHistoryAccounts();
 			}
+
+			// 强制更新视图
+			this.$forceUpdate();
 		},
 
 		onStudentIdFocus() {
@@ -401,6 +429,61 @@ export default {
 				// 即使初始化失败，也不影响正常登录功能
 			}
 		},
+
+			// 调试方法
+			debugHistoryFunction() {
+				console.group('🔍 历史功能调试信息');
+
+				const userType = this.isTeacherMode ? 'teacher' : 'student';
+				console.log('当前用户类型:', userType);
+				console.log('showHistoryDropdown:', this.showHistoryDropdown);
+				console.log('currentHistory:', this.currentHistory);
+				console.log('hasHistory:', this.hasHistory);
+
+				// 检查本地存储
+				const storageKey = `csmu_login_history_${userType}`;
+				const rawData = uni.getStorageSync(storageKey);
+				console.log('本地存储键:', storageKey);
+				console.log('本地存储原始数据:', rawData);
+
+				// 重新加载历史记录
+				this.loadHistoryAccounts();
+
+				console.groupEnd();
+
+				uni.showModal({
+					title: '调试信息',
+					content: `用户类型: ${userType}\n历史记录数量: ${this.currentHistory.length}\nhasHistory: ${this.hasHistory}\n\n详细信息请查看控制台`,
+					showCancel: false
+				});
+			},
+
+			addTestHistory() {
+				const userType = this.isTeacherMode ? 'teacher' : 'student';
+				const testAccount = {
+					studentId: userType === 'teacher' ? 'T001' : '2021001001',
+					password: 'test123456'
+				};
+
+				simpleStorage.addToHistory(testAccount, userType);
+				this.loadHistoryAccounts();
+
+				uni.showToast({
+					title: '已添加测试历史记录',
+					icon: 'success'
+				});
+			},
+
+			clearTestHistory() {
+				const userType = this.isTeacherMode ? 'teacher' : 'student';
+				simpleStorage.clearHistory(userType);
+				this.loadHistoryAccounts();
+
+				uni.showToast({
+					title: '已清空历史记录',
+					icon: 'success'
+				});
+			},
 
 
 
@@ -660,6 +743,43 @@ export default {
 
 .delete-history:active {
 	color: #f44336;
+}
+
+.no-history {
+	padding: 40rpx 20rpx;
+	text-align: center;
+}
+
+.no-history-text {
+	font-size: 26rpx;
+	color: #666;
+	display: block;
+	margin-bottom: 10rpx;
+}
+
+.no-history-hint {
+	font-size: 22rpx;
+	color: #999;
+	display: block;
+}
+
+/* 调试按钮样式 */
+.debug-section {
+	margin: 20rpx 40rpx;
+	display: flex;
+	flex-direction: column;
+	gap: 10rpx;
+}
+
+.debug-btn {
+	background-color: #FF9800;
+	color: white;
+	border: none;
+	border-radius: 8rpx;
+	padding: 12rpx 24rpx;
+	font-size: 24rpx;
+	opacity: 0.8;
+	margin-bottom: 10rpx;
 }
 
 /* 开发环境测试按钮 */

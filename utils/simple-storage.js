@@ -95,7 +95,15 @@ class SimpleStorage {
 	// 获取登录历史
 	getLoginHistory(userType = 'student') {
 		try {
-			return uni.getStorageSync(`${this.historyKey}_${userType}`) || [];
+			const storageKey = `${this.historyKey}_${userType}`;
+			const data = uni.getStorageSync(storageKey) || [];
+
+			console.log('🔍 getLoginHistory - 存储键:', storageKey);
+			console.log('🔍 getLoginHistory - 原始数据:', data);
+			console.log('🔍 getLoginHistory - 数据类型:', typeof data);
+			console.log('🔍 getLoginHistory - 是否为数组:', Array.isArray(data));
+
+			return data;
 		} catch (e) {
 			console.error('获取历史记录失败:', e);
 			return [];
@@ -104,7 +112,10 @@ class SimpleStorage {
 
 	// 获取历史记录（无需解密）
 	getDecryptedHistory(userType = 'student') {
-		return this.getLoginHistory(userType);
+		console.log('🔍 getDecryptedHistory - 用户类型:', userType);
+		const history = this.getLoginHistory(userType);
+		console.log('🔍 getDecryptedHistory - 返回数据:', history);
+		return history;
 	}
 
 	// 删除单个历史记录
