@@ -143,6 +143,7 @@
 import semesterCalculator from '../../utils/semester.js';
 import dateFormatter from '../../utils/date-formatter.js';
 import authService from '../../services/auth.js';
+import educationApi from '../../services/education-api.js';
 
 export default {
 	data() {
@@ -160,6 +161,13 @@ export default {
 			attendanceRate: 95,
 			showNoticePopup: false,
 			selectedNotice: null,
+			// 数据加载状态
+			loadingStates: {
+				userInfo: false,
+				todayCourses: false,
+				notices: false,
+				studyStats: false
+			},
 			todayCourses: [
 				{
 					id: 1,
@@ -217,9 +225,7 @@ export default {
 	},
 	onLoad() {
 		this.checkLoginStatus();
-		this.loadUserInfo();
-		this.initSemesterInfo();
-		this.loadTodayCourses();
+		this.initPageData();
 	},
 	onShow() {
 		// 页面显示时刷新数据
@@ -338,6 +344,135 @@ export default {
 				icon: 'none',
 				duration: 2000
 			});
+		},
+
+		/**
+		 * 初始化页面数据
+		 * 使用新的API服务加载数据
+		 */
+		async initPageData() {
+			// 并行加载多个数据源
+			await Promise.all([
+				this.loadUserInfoFromApi(),
+				this.loadTodayCoursesFromApi(),
+				this.loadNoticesFromApi(),
+				this.loadStudyStatsFromApi()
+			]);
+
+			// 初始化学期信息
+			this.initSemesterInfo();
+		},
+
+		/**
+		 * 从API加载用户信息
+		 */
+		async loadUserInfoFromApi() {
+			this.loadingStates.userInfo = true;
+			try {
+				const response = await educationApi.getUserProfile();
+				if (response.success) {
+					this.userInfo = {
+						...this.userInfo,
+						name: response.data.real_name || '未知用户',
+						studentId: response.data.student_id || '',
+						major: response.data.major || '未知专业',
+						grade: response.data.grade ? `${response.data.grade}级` : '未知年级',
+						className: response.data.class_name || '未知班级',
+						college: response.data.college || '未知学院',
+						totalCredits: response.data.total_credits || 45,
+						gpa: response.data.gpa || '3.65',
+						rank: response.data.rank || '15/120'
+					};
+				}
+			} catch (error) {
+				console.error('加载用户信息失败:', error);
+				// 保持使用本地存储的用户信息作为备用
+				this.loadUserInfo();
+			} finally {
+				this.loadingStates.userInfo = false;
+			}
+		},
+
+		/**
+		 * 从API加载今日课程
+		 */
+		async loadTodayCoursesFromApi() {
+			this.loadingStates.todayCourses = true;
+			try {
+				const response = await educationApi.getCurrentSchedule();
+				if (response.success && response.data.courses) {
+					// 筛选今天的课程
+					const today = new Date().getDay();
+					const todayCourses = response.data.courses.filter(course => {
+						return course.dayOfWeek === today;
+					});
+
+					this.todayCourses = todayCourses.map(course => ({
+						id: course.id,
+						name: course.name,
+						time: course.timeSlot,
+						location: course.location,
+						teacher: course.teacher
+					}));
+				}
+			} catch (error) {
+				console.error('加载今日课程失败:', error);
+				// 使用原有的模拟数据逻辑
+				this.loadTodayCourses();
+			} finally {
+				this.loadingStates.todayCourses = false;
+			}
+		},
+
+		/**
+		 * 从API加载校园通知
+		 */
+		async loadNoticesFromApi() {
+			this.loadingStates.notices = true;
+			try {
+				const response = await educationApi.getNoticesList({
+					page: 1,
+					pageSize: 5,
+					type: 'important'
+				});
+				if (response.success && response.data) {
+					this.notices = response.data.map(notice => ({
+						id: notice.id,
+						title: notice.title,
+						summary: notice.content ? notice.content.substring(0, 50) + '...' : '',
+						content: notice.content,
+						department: notice.department,
+						publishTime: notice.publishTime,
+						type: notice.type
+					}));
+				}
+			} catch (error) {
+				console.error('加载校园通知失败:', error);
+				// 保持使用模拟数据
+			} finally {
+				this.loadingStates.notices = false;
+			}
+		},
+
+		/**
+		 * 从API加载学习统计
+		 */
+		async loadStudyStatsFromApi() {
+			this.loadingStates.studyStats = true;
+			try {
+				const response = await educationApi.getGradesStatistics();
+				if (response.success && response.data) {
+					// 更新学习统计数据
+					this.userInfo.totalCredits = response.data.totalCredits || this.userInfo.totalCredits;
+					this.userInfo.gpa = response.data.gpa || this.userInfo.gpa;
+					this.attendanceRate = response.data.attendanceRate || this.attendanceRate;
+				}
+			} catch (error) {
+				console.error('加载学习统计失败:', error);
+				// 保持使用默认数据
+			} finally {
+				this.loadingStates.studyStats = false;
+			}
 		}
 	}
 }
