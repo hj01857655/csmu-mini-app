@@ -1,14 +1,30 @@
 /**
  * CSMU教务系统 - 统一API配置管理
  * 所有API相关配置的唯一来源，消除重复配置
+ * 兼容小程序环境，不使用 process.env
  */
 
 class ApiConfig {
 	constructor() {
+		// 小程序环境兼容的环境变量获取函数
+		this.getEnvVar = (key, defaultValue = '') => {
+			if (typeof process !== 'undefined' && process.env) {
+				return process.env[key] || defaultValue;
+			}
+
+			// 小程序环境下的备用配置
+			const envConfig = {
+				'NODE_ENV': 'development',
+				'VUE_APP_API_BASE_URL': ''
+			};
+
+			return envConfig[key] || defaultValue;
+		};
+
 		// 环境配置映射
 		this.environments = {
 			development: {
-				baseURL: process.env.VUE_APP_API_BASE_URL || 'http://localhost:8000/api',
+				baseURL: this.getEnvVar('VUE_APP_API_BASE_URL') || 'http://localhost:8000/api',
 				timeout: 10000,
 				enableMock: true,
 				retryTimes: 3,
@@ -22,7 +38,7 @@ class ApiConfig {
 				enableErrorLog: true
 			},
 			production: {
-				baseURL: process.env.VUE_APP_API_BASE_URL || 'https://api.csmu.edu.cn/api',
+				baseURL: this.getEnvVar('VUE_APP_API_BASE_URL') || 'https://api.csmu.edu.cn/api',
 				timeout: 15000,
 				enableMock: false,
 				retryTimes: 2,
@@ -38,7 +54,7 @@ class ApiConfig {
 				enableErrorTracking: true
 			},
 			staging: {
-				baseURL: process.env.VUE_APP_API_BASE_URL || 'https://staging-api.csmu.edu.cn/api',
+				baseURL: this.getEnvVar('VUE_APP_API_BASE_URL') || 'https://staging-api.csmu.edu.cn/api',
 				timeout: 12000,
 				enableMock: false,
 				retryTimes: 2,
@@ -54,8 +70,8 @@ class ApiConfig {
 		};
 
 		// 当前环境
-		this.currentEnv = process.env.NODE_ENV || 'development';
-		
+		this.currentEnv = this.getEnvVar('NODE_ENV') === 'production' ? 'production' : 'development';
+
 		// 缓存当前配置
 		this._currentConfig = null;
 	}
@@ -92,11 +108,11 @@ class ApiConfig {
 	 */
 	updateConfig(environment, updates) {
 		if (this.environments[environment]) {
-			this.environments[environment] = { 
-				...this.environments[environment], 
-				...updates 
+			this.environments[environment] = {
+				...this.environments[environment],
+				...updates
 			};
-			
+
 			// 如果更新的是当前环境，清除缓存
 			if (environment === this.currentEnv) {
 				this._currentConfig = null;
@@ -177,18 +193,18 @@ class ApiConfig {
 		if (config.baseURL) {
 			try {
 				const url = new URL(config.baseURL);
-				
+
 				// 生产环境检查
 				if (environment === 'production') {
 					if (url.protocol !== 'https:') {
 						results.warnings.push('生产环境建议使用HTTPS');
 					}
-					
+
 					if (url.hostname === 'localhost' || url.hostname === '127.0.0.1') {
 						results.errors.push('生产环境不应使用localhost');
 						results.isValid = false;
 					}
-					
+
 					if (config.enableMock) {
 						results.errors.push('生产环境不应启用模拟数据');
 						results.isValid = false;

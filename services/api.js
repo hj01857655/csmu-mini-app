@@ -11,24 +11,29 @@
  * 例如：https://api.csmu.edu.cn 或实际的生产环境API服务器地址
  */
 
-// 导入配置验证器
-import envValidator from '../utils/env-config-validator.js';
-
-// 导入统一API配置
-import apiConfig from '../config/api-config.js';
+// 导入配置
+import config from '../config/index.js';
 
 // 获取当前环境配置
-const config = apiConfig.getCurrentConfig();
+const apiConfig = config.getCurrentApiConfig();
+const currentEnv = config.CURRENT_ENV;
 
-// 验证API配置
-if (process.env.NODE_ENV !== 'test') {
-	const validation = apiConfig.validateConfig();
-	if (!validation.isValid) {
-		console.error('API配置验证失败:', validation.errors);
+// 小程序环境兼容的环境检查
+const getEnvVar = (key, defaultValue = '') => {
+	if (typeof process !== 'undefined' && process.env) {
+		return process.env[key] || defaultValue;
 	}
-	if (validation.warnings.length > 0) {
-		console.warn('API配置警告:', validation.warnings);
-	}
+	return defaultValue;
+};
+
+// 验证API配置（仅在非测试环境）
+if (getEnvVar('NODE_ENV') !== 'test') {
+	console.log('🔧 API服务初始化:', {
+		环境: currentEnv,
+		API地址: apiConfig.BASE_URL,
+		模拟数据: apiConfig.ENABLE_MOCK ? '启用' : '禁用',
+		超时时间: apiConfig.TIMEOUT + 'ms'
+	});
 }
 
 /**
@@ -36,9 +41,9 @@ if (process.env.NODE_ENV !== 'test') {
  */
 class HttpClient {
 	constructor() {
-		this.baseURL = config.baseURL;
-		this.timeout = config.timeout;
-		this.enableMock = config.enableMock;
+		this.baseURL = apiConfig.BASE_URL;
+		this.timeout = apiConfig.TIMEOUT;
+		this.enableMock = apiConfig.ENABLE_MOCK;
 
 		// 环境检测和警告
 		this.checkEnvironmentConfig();
