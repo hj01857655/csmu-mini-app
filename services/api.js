@@ -14,31 +14,21 @@
 // 导入配置验证器
 import envValidator from '../utils/env-config-validator.js';
 
-// API配置
-const API_CONFIG = {
-	// 开发环境配置
-	development: {
-		baseURL: 'http://localhost:8000/api',
-		timeout: 10000,
-		enableMock: true // 开发环境启用模拟数据
-	},
-	// 生产环境配置
-	// 注意：当前为临时配置，生产环境暂时使用与开发环境相同的API地址
-	// 正式部署时需要更新为真实的生产环境API地址：https://api.csmu.edu.cn
-	production: {
-		baseURL: 'http://localhost:8000/api', // 临时配置：与开发环境相同
-		timeout: 15000,
-		enableMock: false // 生产环境禁用模拟数据
-	}
-};
+// 导入统一API配置
+import apiConfig from '../config/api-config.js';
 
 // 获取当前环境配置
-const currentEnv = process.env.NODE_ENV || 'development';
-const config = API_CONFIG[currentEnv];
+const config = apiConfig.getCurrentConfig();
 
 // 验证API配置
 if (process.env.NODE_ENV !== 'test') {
-	envValidator.logConfigValidation(API_CONFIG);
+	const validation = apiConfig.validateConfig();
+	if (!validation.isValid) {
+		console.error('API配置验证失败:', validation.errors);
+	}
+	if (validation.warnings.length > 0) {
+		console.warn('API配置警告:', validation.warnings);
+	}
 }
 
 /**

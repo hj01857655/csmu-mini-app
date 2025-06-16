@@ -13,22 +13,28 @@ const ENV = {
 // 当前环境（可以通过编译时变量或其他方式动态设置）
 const CURRENT_ENV = ENV.DEVELOPMENT;
 
-// API配置
+// API配置 - 支持环境变量
 const API_CONFIG = {
 	[ENV.DEVELOPMENT]: {
-		BASE_URL: 'http://localhost:8000/api/v1',
+		BASE_URL: process.env.VUE_APP_API_BASE_URL || 'http://localhost:8000/api/v1',
 		TIMEOUT: 10000,
-		RETRY_TIMES: 3
+		RETRY_TIMES: 3,
+		ENABLE_MOCK: true
 	},
 	[ENV.PRODUCTION]: {
-		BASE_URL: 'https://your-production-domain.com/api/v1',
+		// 🚀 生产环境配置 - 部署时请更新
+		BASE_URL: process.env.VUE_APP_API_BASE_URL || 'https://api.csmu.edu.cn/api/v1',
 		TIMEOUT: 15000,
-		RETRY_TIMES: 2
+		RETRY_TIMES: 2,
+		ENABLE_MOCK: false,
+		ENABLE_HTTPS: true,
+		ENABLE_COMPRESSION: true
 	},
 	[ENV.TEST]: {
-		BASE_URL: 'http://test-server.com/api/v1',
+		BASE_URL: process.env.VUE_APP_API_BASE_URL || 'https://test-api.csmu.edu.cn/api/v1',
 		TIMEOUT: 8000,
-		RETRY_TIMES: 1
+		RETRY_TIMES: 1,
+		ENABLE_MOCK: false
 	}
 };
 

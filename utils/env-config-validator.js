@@ -242,23 +242,83 @@ class EnvironmentConfigValidator {
 				baseURL: 'http://localhost:8000/api',
 				timeout: 10000,
 				enableMock: true,
-				description: '开发环境建议使用本地API服务器和模拟数据'
+				description: '开发环境建议使用本地API服务器和模拟数据',
+				envVars: {
+					'VUE_APP_API_BASE_URL': 'http://localhost:8000/api/v1',
+					'VUE_APP_ENABLE_MOCK': 'true',
+					'VUE_APP_DEBUG': 'true'
+				}
 			},
 			production: {
-				baseURL: 'https://api.csmu.edu.cn',
+				baseURL: 'https://api.csmu.edu.cn/api',
 				timeout: 15000,
 				enableMock: false,
-				description: '生产环境必须使用真实API地址和禁用模拟数据'
+				description: '生产环境必须使用真实API地址和禁用模拟数据',
+				envVars: {
+					'VUE_APP_API_BASE_URL': 'https://api.csmu.edu.cn/api/v1',
+					'VUE_APP_ENABLE_MOCK': 'false',
+					'VUE_APP_DEBUG': 'false',
+					'VUE_APP_FORCE_HTTPS': 'true'
+				}
 			},
 			staging: {
-				baseURL: 'https://staging-api.csmu.edu.cn',
+				baseURL: 'https://staging-api.csmu.edu.cn/api',
 				timeout: 12000,
 				enableMock: false,
-				description: '预发布环境使用预发布API服务器'
+				description: '预发布环境使用预发布API服务器',
+				envVars: {
+					'VUE_APP_API_BASE_URL': 'https://staging-api.csmu.edu.cn/api/v1',
+					'VUE_APP_ENABLE_MOCK': 'false',
+					'VUE_APP_DEBUG': 'false'
+				}
 			}
 		};
 
 		return recommendations[environment] || recommendations.development;
+	}
+
+	/**
+	 * 验证环境变量配置
+	 * @returns {Object} 验证结果
+	 */
+	validateEnvironmentVariables() {
+		const results = {
+			isValid: true,
+			warnings: [],
+			errors: [],
+			suggestions: []
+		};
+
+		// 检查必需的环境变量
+		const requiredVars = [
+			'VUE_APP_API_BASE_URL',
+			'VUE_APP_ENABLE_MOCK',
+			'NODE_ENV'
+		];
+
+		requiredVars.forEach(varName => {
+			if (!process.env[varName]) {
+				results.warnings.push(`缺少环境变量: ${varName}`);
+			}
+		});
+
+		// 检查生产环境特定配置
+		if (this.currentEnv === 'production') {
+			if (process.env.VUE_APP_ENABLE_MOCK === 'true') {
+				results.errors.push('生产环境不应启用模拟数据');
+				results.isValid = false;
+			}
+
+			if (process.env.VUE_APP_DEBUG === 'true') {
+				results.warnings.push('生产环境建议禁用调试模式');
+			}
+
+			if (!process.env.VUE_APP_API_BASE_URL?.startsWith('https')) {
+				results.warnings.push('生产环境建议使用HTTPS协议');
+			}
+		}
+
+		return results;
 	}
 }
 

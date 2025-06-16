@@ -1,5 +1,32 @@
 <template>
 	<view class="container">
+		<!-- 学年学期选择器 - 紧凑版 -->
+		<view class="semester-selector">
+			<view class="semester-main-area">
+				<view class="semester-picker-container">
+					<picker mode="selector" :value="currentSemesterIndex" :range="allSemesterOptions" range-key="displayName" @change="onSemesterChange">
+						<view class="semester-picker-enhanced" :class="{ 'picker-current': isCurrentSemesterSelected }">
+							<view class="picker-content">
+								<view class="picker-left">
+									<text class="picker-label">📚</text>
+									<text class="picker-main-text">{{ allSemesterOptions[currentSemesterIndex]?.displayName || '选择学年学期' }}</text>
+								</view>
+								<view class="picker-right">
+									<!-- 快速跳转按钮 - 内联显示 -->
+									<button class="quick-jump-btn" v-if="!isCurrentSemesterSelected" @click="jumpToCurrentSemester">
+										<text class="quick-jump-text">当前</text>
+									</button>
+									<view class="picker-indicator">
+										<text class="arrow-icon">▼</text>
+									</view>
+								</view>
+							</view>
+						</view>
+					</picker>
+				</view>
+			</view>
+		</view>
+
 		<!-- 周次选择器 -->
 		<view class="week-selector">
 			<view class="week-navigation">
@@ -98,6 +125,12 @@ import dateFormatter from '../../utils/date-formatter.js';
 export default {
 	data() {
 		return {
+			// 学年学期相关
+			currentSemesterIndex: 0,
+			allSemesterOptions: [],
+			selectedSemesterKey: '',
+
+			// 周次相关
 			currentWeekIndex: 0,
 			currentSemester: null,
 			weekOptions: [],
@@ -165,8 +198,20 @@ export default {
 		},
 		// 判断当前显示的周是否为本周
 		isCurrentWeek() {
+			// 只有在显示当前学期时才进行本周判断
+			const currentSemester = semesterCalculator.getCurrentSemester();
+			if (this.selectedSemesterKey !== currentSemester?.key) {
+				return false;
+			}
+
 			const currentWeekInfo = semesterCalculator.getCurrentWeekCached();
 			return this.currentWeekIndex + 1 === currentWeekInfo.week;
+		},
+
+		// 判断是否选择了当前学期
+		isCurrentSemesterSelected() {
+			const currentSemester = semesterCalculator.getCurrentSemester();
+			return this.selectedSemesterKey === currentSemester?.key;
 		}
 	},
 	onLoad() {
@@ -187,31 +232,142 @@ export default {
 				});
 			}
 		},
-		initSemesterData() {
-			// 获取当前学期信息
-			this.currentSemester = semesterCalculator.getCurrentSemester();
 
-			// 获取当前周次（使用缓存版本）
-			const currentWeekInfo = semesterCalculator.getCurrentWeekCached();
+		async onSemesterChange(e) {
+			try {
+				this.currentSemesterIndex = e.detail.value;
+				const selectedSemester = this.allSemesterOptions[this.currentSemesterIndex];
+				this.selectedSemesterKey = selectedSemester.key;
 
-			// 生成周次选项
-			this.weekOptions = semesterCalculator.getWeekOptions(this.currentSemester).map(option => option.label);
+				// 保存选择到本地存储
+				uni.setStorageSync('selectedSemesterKey', this.selectedSemesterKey);
 
-			// 设置当前周次索引
-			this.currentWeekIndex = Math.max(0, currentWeekInfo.week - 1);
-
-			// 更新周日期显示
-			this.updateWeekDays();
-
-			// 显示当前学期和周次信息
-
-			// 如果不在学期时间内，显示提示
-			if (!currentWeekInfo.isValid) {
+				// 重新初始化学期数据和加载课表
+				this.updateCurrentSemesterData();
+				await this.loadScheduleData();
+			} catch (error) {
+				console.error('学期切换失败:', error);
 				uni.showToast({
-					title: currentWeekInfo.message,
-					icon: 'none',
-					duration: 3000
+					title: '学期切换失败',
+					icon: 'none'
 				});
+			}
+		},
+		initSemesterData() {
+			try {
+				// 获取所有可用的学期选项
+				this.allSemesterOptions = this.getAllSemesterOptionsWithDisplay();
+
+				// 从本地存储获取用户上次选择的学期
+				const savedSemesterKey = uni.getStorageSync('selectedSemesterKey');
+
+				// 获取当前学年学期信息
+				const currentAcademicInfo = semesterCalculator.getCurrentAcademicInfo();
+
+				// 确定要显示的学期
+				let targetSemesterKey = null;
+				if (savedSemesterKey && this.allSemesterOptions.find(s => s.key === savedSemesterKey)) {
+					// 使用保存的选择（如果有效）
+					targetSemesterKey = savedSemesterKey;
+				} else if (currentAcademicInfo) {
+					// 使用当前学年学期
+					targetSemesterKey = currentAcademicInfo.semesterKey;
+				} else if (this.allSemesterOptions.length > 0) {
+					// 使用第一个可用的学期
+					targetSemesterKey = this.allSemesterOptions[0].key;
+				}
+
+				// 设置选择的学期
+				if (targetSemesterKey) {
+					const semesterIndex = this.allSemesterOptions.findIndex(s => s.key === targetSemesterKey);
+					this.currentSemesterIndex = Math.max(0, semesterIndex);
+					this.selectedSemesterKey = targetSemesterKey;
+
+					// 保存到本地存储
+					uni.setStorageSync('selectedSemesterKey', this.selectedSemesterKey);
+				}
+
+				// 更新当前学期数据
+				this.updateCurrentSemesterData();
+
+				console.log('学期数据初始化完成:', {
+					totalSemesters: this.allSemesterOptions.length,
+					selectedSemester: this.allSemesterOptions[this.currentSemesterIndex]?.displayName,
+					semesterKey: this.selectedSemesterKey
+				});
+			} catch (error) {
+				console.error('学期数据初始化失败:', error);
+				// 使用默认的当前学期
+				this.currentSemester = semesterCalculator.getCurrentSemester();
+				this.selectedSemesterKey = this.currentSemester?.key || '';
+				this.weekOptions = semesterCalculator.getWeekOptions(this.currentSemester).map(option => option.label);
+				this.currentWeekIndex = 0;
+				this.updateWeekDays();
+			}
+		},
+
+		getAllSemesterOptionsWithDisplay() {
+			// 获取所有学期选项并添加显示名称
+			const semesterOptions = semesterCalculator.getSemesterOptions();
+			return semesterOptions.map(semester => ({
+				key: semester.key,
+				displayName: semester.name, // 使用完整的学期名称作为显示名称
+				startDate: semester.startDate,
+				endDate: semester.endDate,
+				isCurrent: semester.isCurrent
+			}));
+		},
+
+		updateCurrentSemesterData() {
+			try {
+				// 根据选择的学期获取学期信息
+				if (this.selectedSemesterKey) {
+					const semesterConfig = semesterCalculator.semesterConfig[this.selectedSemesterKey];
+					if (semesterConfig) {
+						this.currentSemester = {
+							key: this.selectedSemesterKey,
+							name: semesterConfig.name,
+							startDate: semesterConfig.startDate,
+							endDate: semesterConfig.endDate,
+							weeks: semesterConfig.weeks,
+							examWeeks: semesterConfig.examWeeks,
+							holidayWeeks: semesterConfig.holidayWeeks
+						};
+					} else {
+						// 如果找不到配置，使用当前学期
+						this.currentSemester = semesterCalculator.getCurrentSemester();
+					}
+				} else {
+					// 如果没有选择学期，使用当前学期
+					this.currentSemester = semesterCalculator.getCurrentSemester();
+				}
+
+				// 生成周次选项
+				this.weekOptions = semesterCalculator.getWeekOptions(this.currentSemester).map(option => option.label);
+
+				// 设置周次索引
+				if (this.selectedSemesterKey === semesterCalculator.getCurrentSemester()?.key) {
+					// 如果是当前学期，使用当前周次
+					const currentWeekInfo = semesterCalculator.getCurrentWeekCached();
+					this.currentWeekIndex = Math.max(0, currentWeekInfo.week - 1);
+
+					// 如果不在学期时间内，显示提示
+					if (!currentWeekInfo.isValid) {
+						uni.showToast({
+							title: currentWeekInfo.message,
+							icon: 'none',
+							duration: 3000
+						});
+					}
+				} else {
+					// 如果不是当前学期，默认显示第一周
+					this.currentWeekIndex = 0;
+				}
+
+				// 更新周日期显示
+				this.updateWeekDays();
+			} catch (error) {
+				console.error('更新学期数据失败:', error);
 			}
 		},
 
@@ -260,18 +416,39 @@ export default {
 		},
 		async loadScheduleData() {
 			try {
-				// 使用新的教务API服务
+				uni.showLoading({
+					title: '加载课程表...'
+				});
+
 				const week = this.currentWeekIndex + 1;
-				const response = await educationApi.getCurrentSchedule(week);
+				let response;
+
+				// 根据是否选择了特定学期来调用不同的API
+				if (this.selectedSemesterKey && this.selectedSemesterKey !== semesterCalculator.getCurrentSemester()?.key) {
+					// 获取指定学期的课程表
+					response = await educationApi.getScheduleBySemester(this.selectedSemesterKey, week);
+				} else {
+					// 获取当前学期的课程表
+					response = await educationApi.getCurrentSchedule(week);
+				}
 
 				if (response.success && response.data.courses) {
 					this.courses = this.formatScheduleData(response.data.courses);
+					console.log('课程表加载成功:', {
+						semester: this.selectedSemesterKey,
+						week: week,
+						coursesCount: Object.keys(this.courses).length
+					});
 				} else {
+					console.log('API返回数据为空，使用模拟数据');
 					// 保持使用默认的模拟数据
 				}
 			} catch (error) {
+				console.error('课程表加载失败:', error);
 				// 不显示错误提示，静默失败并使用模拟数据
 				// 这样可以确保在API不可用时仍能正常显示课程表
+			} finally {
+				uni.hideLoading();
 			}
 		},
 		formatScheduleData(coursesData) {
@@ -327,6 +504,54 @@ export default {
 		},
 		closeCourseDetail() {
 			this.showPopup = false;
+		},
+
+		async jumpToCurrentSemester() {
+			try {
+				const currentAcademicInfo = semesterCalculator.getCurrentAcademicInfo();
+				if (currentAcademicInfo) {
+					// 查找当前学期在选项中的索引
+					const currentSemesterIndex = this.allSemesterOptions.findIndex(s => s.key === currentAcademicInfo.semesterKey);
+
+					if (currentSemesterIndex >= 0) {
+						// 设置为当前学期
+						this.currentSemesterIndex = currentSemesterIndex;
+						this.selectedSemesterKey = currentAcademicInfo.semesterKey;
+
+						// 保存到本地存储
+						uni.setStorageSync('selectedSemesterKey', this.selectedSemesterKey);
+
+						// 重新初始化数据
+						this.updateCurrentSemesterData();
+						await this.loadScheduleData();
+
+						uni.showToast({
+							title: '已切换到当前学期',
+							icon: 'success',
+							duration: 2000
+						});
+					} else {
+						uni.showToast({
+							title: '当前学期不在可选范围内',
+							icon: 'none',
+							duration: 2000
+						});
+					}
+				} else {
+					uni.showToast({
+						title: '无法获取当前学期信息',
+						icon: 'none',
+						duration: 2000
+					});
+				}
+			} catch (error) {
+				console.error('跳转到当前学期失败:', error);
+				uni.showToast({
+					title: '跳转失败',
+					icon: 'none',
+					duration: 2000
+				});
+			}
 		}
 	}
 }
@@ -338,59 +563,545 @@ export default {
 	min-height: 100vh;
 }
 
+/* ===== 学年学期选择器紧凑优化样式 ===== */
+.semester-selector {
+	background: #ffffff;
+	padding: 12rpx 16rpx;
+	border-bottom: 1rpx solid #e8eaed;
+	position: relative;
+}
+
+/* 简化的顶部装饰线 */
+.semester-selector::before {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	height: 2rpx;
+	background: linear-gradient(90deg, transparent, #1976D2, transparent);
+	opacity: 0.6;
+}
+
+/* 主选择器区域 */
+.semester-main-area {
+	max-width: 680rpx;
+	margin: 0 auto;
+}
+
+/* 选择器容器 */
+.semester-picker-container {
+	position: relative;
+}
+
+/* 紧凑的选择器样式 */
+.semester-picker-enhanced {
+	background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+	border: 1rpx solid #e3f2fd;
+	border-radius: 12rpx;
+	padding: 0;
+	box-shadow:
+		0 4rpx 12rpx rgba(25, 118, 210, 0.08),
+		0 2rpx 4rpx rgba(25, 118, 210, 0.04);
+	transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+	position: relative;
+	overflow: hidden;
+}
+
+/* 当前学期特殊样式 */
+.semester-picker-enhanced.picker-current {
+	border-color: #1976D2;
+	background: linear-gradient(135deg, #e3f2fd 0%, #f3f8ff 100%);
+	box-shadow:
+		0 4rpx 12rpx rgba(25, 118, 210, 0.15),
+		0 2rpx 4rpx rgba(25, 118, 210, 0.1);
+}
+
+/* hover状态 - 减少动画幅度 */
+.semester-picker-enhanced:hover {
+	transform: translateY(-1rpx);
+	border-color: #1976D2;
+	box-shadow:
+		0 6rpx 16rpx rgba(25, 118, 210, 0.12),
+		0 3rpx 6rpx rgba(25, 118, 210, 0.08);
+}
+
+/* active状态 */
+.semester-picker-enhanced:active {
+	transform: translateY(0) scale(0.99);
+	box-shadow:
+		0 2rpx 8rpx rgba(25, 118, 210, 0.15),
+		0 1rpx 4rpx rgba(25, 118, 210, 0.1);
+}
+
+/* 紧凑的选择器内容 */
+.picker-content {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 14rpx 18rpx;
+	min-height: 56rpx;
+}
+
+.picker-left {
+	display: flex;
+	align-items: center;
+	gap: 8rpx;
+	flex: 1;
+}
+
+.picker-label {
+	font-size: 24rpx;
+	opacity: 0.8;
+}
+
+.picker-main-text {
+	font-size: 26rpx;
+	font-weight: 600;
+	color: #1976D2;
+	letter-spacing: 0.3rpx;
+	flex: 1;
+}
+
+.picker-current .picker-main-text {
+	color: #0D47A1;
+	font-weight: 700;
+}
+
+.picker-right {
+	display: flex;
+	align-items: center;
+	gap: 8rpx;
+}
+
+/* 紧凑的快速跳转按钮 */
+.quick-jump-btn {
+	display: flex;
+	align-items: center;
+	padding: 4rpx 8rpx;
+	background: linear-gradient(135deg, #FF6B35 0%, #FF8E53 100%);
+	color: white;
+	border-radius: 12rpx;
+	font-size: 18rpx;
+	border: none;
+	box-shadow: 0 2rpx 6rpx rgba(255, 107, 53, 0.25);
+	transition: all 0.3s ease;
+	min-width: 48rpx;
+	height: 32rpx;
+}
+
+.quick-jump-btn:hover {
+	transform: scale(1.05);
+	box-shadow: 0 3rpx 8rpx rgba(255, 107, 53, 0.35);
+}
+
+.quick-jump-btn:active {
+	transform: scale(0.95);
+	box-shadow: 0 1rpx 4rpx rgba(255, 107, 53, 0.3);
+}
+
+.quick-jump-text {
+	font-weight: 600;
+	font-size: 18rpx;
+	line-height: 1;
+}
+
+.picker-indicator {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 32rpx;
+	height: 32rpx;
+	background: rgba(25, 118, 210, 0.1);
+	border-radius: 50%;
+	transition: all 0.3s ease;
+}
+
+.semester-picker-enhanced:hover .picker-indicator {
+	background: rgba(25, 118, 210, 0.2);
+	transform: scale(1.05);
+}
+
+.arrow-icon {
+	font-size: 16rpx;
+	color: #1976D2;
+	font-weight: bold;
+	transition: transform 0.3s ease;
+}
+
+.semester-picker-enhanced:active .arrow-icon {
+	transform: rotate(180deg);
+}
+
+/* ===== 周次选择器紧凑优化样式 ===== */
 .week-selector {
-	background-color: #fff;
-	padding: 20rpx;
-	border-bottom: 1rpx solid #e5e5e5;
+	background: #f8f9fa;
+	padding: 12rpx 16rpx;
+	border-bottom: 1rpx solid #e8eaed;
+	position: relative;
+}
+
+/* 简化的分隔线 */
+.week-selector::before {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: 16rpx;
+	right: 16rpx;
+	height: 1rpx;
+	background: linear-gradient(90deg, transparent, rgba(25, 118, 210, 0.15), transparent);
 }
 
 .week-navigation {
 	display: flex;
 	align-items: center;
 	justify-content: center;
+	max-width: 680rpx;
+	margin: 0 auto;
+	gap: 12rpx;
 }
 
+/* 紧凑的周次导航按钮 */
 .week-btn {
-	width: 80rpx;
-	height: 60rpx;
-	border: 1rpx solid #1976D2;
-	background-color: #fff;
-	border-radius: 8rpx;
+	width: 56rpx;
+	height: 56rpx;
+	border: 1rpx solid #e3f2fd;
+	background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+	border-radius: 10rpx;
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	margin: 0 20rpx;
+	box-shadow:
+		0 2rpx 8rpx rgba(25, 118, 210, 0.06),
+		0 1rpx 3rpx rgba(25, 118, 210, 0.04);
+	transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+	position: relative;
+	overflow: hidden;
+}
+
+.week-btn:hover {
+	border-color: #1976D2;
+	transform: translateY(-1rpx);
+	box-shadow:
+		0 4rpx 12rpx rgba(25, 118, 210, 0.1),
+		0 2rpx 6rpx rgba(25, 118, 210, 0.08);
+}
+
+.week-btn:active {
+	transform: translateY(0) scale(0.95);
+	box-shadow:
+		0 1rpx 4rpx rgba(25, 118, 210, 0.15),
+		0 1rpx 2rpx rgba(25, 118, 210, 0.1);
 }
 
 .week-btn:disabled {
-	border-color: #ccc;
-	background-color: #f5f5f5;
+	border-color: #e0e0e0;
+	background: #f5f5f5;
+	transform: none;
+	box-shadow: none;
+	cursor: not-allowed;
 }
 
 .week-btn:disabled .btn-icon {
-	color: #ccc;
+	color: #bdbdbd;
 }
 
 .btn-icon {
-	font-size: 32rpx;
+	font-size: 22rpx;
 	color: #1976D2;
-	font-weight: bold;
+	font-weight: 700;
+	transition: all 0.3s ease;
 }
 
+.week-btn:hover .btn-icon {
+	color: #0D47A1;
+	transform: scale(1.05);
+}
+
+/* 紧凑的周次选择器主体 */
 .picker-text {
 	text-align: center;
-	font-size: 32rpx;
+	font-size: 24rpx;
 	color: #1976D2;
-	padding: 20rpx 40rpx;
-	border: 1rpx solid #1976D2;
-	border-radius: 8rpx;
-	background-color: #E3F2FD;
-	min-width: 400rpx;
+	font-weight: 600;
+	padding: 12rpx 24rpx;
+	border: 1rpx solid #e3f2fd;
+	border-radius: 10rpx;
+	background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+	min-width: 280rpx;
+	box-shadow:
+		0 2rpx 8rpx rgba(25, 118, 210, 0.06),
+		0 1rpx 3rpx rgba(25, 118, 210, 0.04);
+	transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+	position: relative;
+	overflow: hidden;
+}
+
+.picker-text:hover {
+	border-color: #1976D2;
+	transform: translateY(-1rpx);
+	box-shadow:
+		0 4rpx 12rpx rgba(25, 118, 210, 0.1),
+		0 2rpx 6rpx rgba(25, 118, 210, 0.08);
+}
+
+.picker-text:active {
+	transform: translateY(0) scale(0.99);
+	box-shadow:
+		0 1rpx 4rpx rgba(25, 118, 210, 0.12),
+		0 1rpx 2rpx rgba(25, 118, 210, 0.08);
 }
 
 .arrow {
-	margin-left: 10rpx;
-	font-size: 24rpx;
+	margin-left: 8rpx;
+	font-size: 16rpx;
+	font-weight: bold;
+	transition: transform 0.3s ease;
+	display: inline-block;
+}
+
+.picker-text:active .arrow {
+	transform: rotate(180deg);
+}
+
+/* ===== 响应式设计优化 ===== */
+
+/* 小屏幕设备优化 (手机竖屏) - 超紧凑模式 */
+@media screen and (max-width: 480px) {
+	.semester-selector {
+		padding: 10rpx 12rpx;
+	}
+
+	.semester-main-area {
+		max-width: 100%;
+	}
+
+	.picker-content {
+		padding: 10rpx 14rpx;
+		min-height: 48rpx;
+	}
+
+	.picker-label {
+		font-size: 20rpx;
+	}
+
+	.picker-main-text {
+		font-size: 22rpx;
+	}
+
+	.quick-jump-btn {
+		padding: 3rpx 6rpx;
+		font-size: 16rpx;
+		min-width: 40rpx;
+		height: 28rpx;
+	}
+
+	.quick-jump-text {
+		font-size: 16rpx;
+	}
+
+	.picker-indicator {
+		width: 28rpx;
+		height: 28rpx;
+	}
+
+	.arrow-icon {
+		font-size: 14rpx;
+	}
+
+	.week-selector {
+		padding: 10rpx 12rpx;
+	}
+
+	.week-navigation {
+		gap: 8rpx;
+		max-width: 100%;
+	}
+
+	.week-btn {
+		width: 48rpx;
+		height: 48rpx;
+	}
+
+	.btn-icon {
+		font-size: 18rpx;
+	}
+
+	.picker-text {
+		font-size: 20rpx;
+		padding: 10rpx 18rpx;
+		min-width: 240rpx;
+	}
+
+	.arrow {
+		font-size: 14rpx;
+		margin-left: 6rpx;
+	}
+}
+
+/* 中等屏幕设备优化 (平板) - 平衡模式 */
+@media screen and (min-width: 481px) and (max-width: 768px) {
+	.semester-selector {
+		padding: 12rpx 16rpx;
+	}
+
+	.semester-main-area,
+	.week-navigation {
+		max-width: 600rpx;
+	}
+
+	.picker-content {
+		padding: 12rpx 16rpx;
+		min-height: 52rpx;
+	}
+
+	.picker-main-text {
+		font-size: 24rpx;
+	}
+
+	.week-selector {
+		padding: 12rpx 16rpx;
+	}
+
+	.week-btn {
+		width: 52rpx;
+		height: 52rpx;
+	}
+
+	.btn-icon {
+		font-size: 20rpx;
+	}
+
+	.picker-text {
+		font-size: 22rpx;
+		padding: 11rpx 20rpx;
+		min-width: 300rpx;
+	}
+}
+
+/* 大屏幕设备优化 (桌面端) - 标准模式 */
+@media screen and (min-width: 769px) {
+	.semester-selector {
+		padding: 14rpx 18rpx;
+	}
+
+	.semester-main-area,
+	.week-navigation {
+		max-width: 720rpx;
+	}
+
+	.picker-content {
+		padding: 16rpx 20rpx;
+		min-height: 60rpx;
+	}
+
+	.picker-main-text {
+		font-size: 28rpx;
+	}
+
+	.quick-jump-btn {
+		padding: 5rpx 10rpx;
+		height: 36rpx;
+		min-width: 52rpx;
+	}
+
+	.quick-jump-text {
+		font-size: 20rpx;
+	}
+
+	.week-selector {
+		padding: 14rpx 18rpx;
+	}
+
+	.week-btn {
+		width: 60rpx;
+		height: 60rpx;
+	}
+
+	.btn-icon {
+		font-size: 24rpx;
+	}
+
+	.picker-text {
+		font-size: 26rpx;
+		padding: 14rpx 28rpx;
+		min-width: 320rpx;
+	}
+}
+
+/* 高分辨率屏幕优化 */
+@media screen and (min-resolution: 2dppx) {
+	.semester-selector::before,
+	.week-selector::before {
+		height: 2rpx;
+	}
+
+	.picker-accent-line {
+		height: 4rpx;
+	}
+}
+
+/* 深色模式适配 */
+@media (prefers-color-scheme: dark) {
+	.semester-selector {
+		background: linear-gradient(135deg, #1e1e1e 0%, #2d2d2d 100%);
+		border-bottom-color: #404040;
+	}
+
+	.title-text {
+		color: #64B5F6;
+	}
+
+	.semester-picker-enhanced {
+		background: linear-gradient(135deg, #2d2d2d 0%, #3d3d3d 100%);
+		border-color: #404040;
+	}
+
+	.semester-picker-enhanced.picker-current {
+		border-color: #64B5F6;
+		background: linear-gradient(135deg, #1a237e 0%, #283593 100%);
+	}
+
+	.picker-main-text {
+		color: #64B5F6;
+	}
+
+	.week-selector {
+		background: linear-gradient(135deg, #2d2d2d 0%, #1e1e1e 100%);
+		border-bottom-color: #404040;
+	}
+
+	.week-btn {
+		background: linear-gradient(135deg, #2d2d2d 0%, #3d3d3d 100%);
+		border-color: #404040;
+	}
+
+	.btn-icon {
+		color: #64B5F6;
+	}
+
+	.picker-text {
+		background: linear-gradient(135deg, #2d2d2d 0%, #3d3d3d 100%);
+		border-color: #404040;
+		color: #64B5F6;
+	}
+}
+
+/* 减少动画的用户偏好设置 */
+@media (prefers-reduced-motion: reduce) {
+	.semester-selector::before,
+	.quick-jump-icon,
+	.gradientFlow,
+	.pulse {
+		animation: none;
+	}
+
+	.semester-picker-enhanced,
+	.week-btn,
+	.picker-text,
+	.quick-jump-btn {
+		transition: none;
+	}
 }
 
 .schedule-header {

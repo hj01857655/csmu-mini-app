@@ -318,8 +318,118 @@ class SemesterCalculator {
 			}
 		}
 
-		// 按开始日期排序，最新的在前面
-		return options.sort((a, b) => new Date(b.startDate) - new Date(a.startDate));
+		// 按学期时间排序
+		options.sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
+		return options;
+	}
+
+	/**
+	 * 获取学年选项
+	 * @returns {Array} 学年选项数组
+	 */
+	getAcademicYearOptions() {
+		const yearOptions = [];
+		const currentDate = new Date();
+		const semesterOptions = this.getSemesterOptions();
+
+		// 从学期选项中提取学年信息
+		const yearSet = new Set();
+		semesterOptions.forEach(semester => {
+			const yearMatch = semester.key.match(/^(\d{4}-\d{4})-/);
+			if (yearMatch) {
+				yearSet.add(yearMatch[1]);
+			}
+		});
+
+		// 转换为数组并排序
+		const years = Array.from(yearSet).sort();
+
+		years.forEach(year => {
+			const [startYear, endYear] = year.split('-');
+			yearOptions.push({
+				key: year,
+				name: `${startYear}-${endYear}学年`,
+				startYear: parseInt(startYear),
+				endYear: parseInt(endYear)
+			});
+		});
+
+		return yearOptions;
+	}
+
+	/**
+	 * 获取指定学年的学期选项
+	 * @param {string} academicYear - 学年标识 (如: '2024-2025')
+	 * @returns {Array} 学期选项数组
+	 */
+	getSemestersByYear(academicYear) {
+		const semesterOptions = [];
+		const allSemesters = this.getSemesterOptions();
+
+		allSemesters.forEach(semester => {
+			if (semester.key.startsWith(academicYear + '-')) {
+				const semesterNum = semester.key.split('-')[2];
+				semesterOptions.push({
+					key: semester.key,
+					name: `第${semesterNum}学期`,
+					fullName: semester.name,
+					startDate: semester.startDate,
+					endDate: semester.endDate,
+					isCurrent: semester.isCurrent,
+					semesterNumber: parseInt(semesterNum)
+				});
+			}
+		});
+
+		// 按学期编号排序
+		semesterOptions.sort((a, b) => a.semesterNumber - b.semesterNumber);
+		return semesterOptions;
+	}
+
+	/**
+	 * 解析学期标识
+	 * @param {string} semesterKey - 学期标识 (如: '2024-2025-1')
+	 * @returns {Object} 解析结果
+	 */
+	parseSemesterKey(semesterKey) {
+		const match = semesterKey.match(/^(\d{4}-\d{4})-(\d+)$/);
+		if (!match) {
+			return null;
+		}
+
+		const [, academicYear, semesterNumber] = match;
+		const [startYear, endYear] = academicYear.split('-');
+
+		return {
+			academicYear,
+			semesterNumber: parseInt(semesterNumber),
+			startYear: parseInt(startYear),
+			endYear: parseInt(endYear),
+			fullKey: semesterKey
+		};
+	}
+
+	/**
+	 * 获取当前学年学期的标识信息
+	 * @returns {Object} 当前学年学期信息
+	 */
+	getCurrentAcademicInfo() {
+		const currentSemester = this.getCurrentSemester();
+		if (!currentSemester) {
+			return null;
+		}
+
+		const parsed = this.parseSemesterKey(currentSemester.key);
+		if (!parsed) {
+			return null;
+		}
+
+		return {
+			academicYear: parsed.academicYear,
+			semesterNumber: parsed.semesterNumber,
+			semesterKey: currentSemester.key,
+			semesterName: currentSemester.name
+		};
 	}
 
 	/**
