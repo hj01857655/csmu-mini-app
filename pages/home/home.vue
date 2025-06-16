@@ -230,7 +230,10 @@ export default {
 	onShow() {
 		// 页面显示时刷新数据
 		this.checkAndUpdateSemesterInfo();
-		this.loadTodayCourses();
+		// 只在API模式下刷新今日课程，避免重复加载
+		if (!this.loadingStates.todayCourses) {
+			this.loadTodayCoursesFromApi();
+		}
 	},
 	methods: {
 		checkLoginStatus() {

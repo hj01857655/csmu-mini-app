@@ -9,7 +9,7 @@
 				</view>
 			</picker>
 		</view>
-		
+
 		<!-- 成绩统计 -->
 		<view class="grade-summary">
 			<view class="summary-item">
@@ -25,7 +25,7 @@
 				<view class="summary-label">通过课程</view>
 			</view>
 		</view>
-		
+
 		<!-- 成绩列表 -->
 		<view class="grade-list">
 			<view class="list-header">
@@ -36,7 +36,7 @@
 					<text class="filter-btn" :class="{ active: filterType === 'failed' }" @click="setFilter('failed')">未通过</text>
 				</view>
 			</view>
-			
+
 			<scroll-view scroll-y class="grade-scroll">
 				<view class="grade-item" v-for="course in filteredGrades" :key="course.id" @click="showGradeDetail(course)">
 					<view class="course-info">
@@ -60,7 +60,7 @@
 				</view>
 			</scroll-view>
 		</view>
-		
+
 		<!-- 成绩详情弹窗 -->
 		<view class="popup-mask" v-if="showPopup" @click="closeGradeDetail">
 			<view class="grade-detail" v-if="selectedGrade" @click.stop>
@@ -109,6 +109,7 @@
 
 <script>
 import semesterCalculator from '../../utils/semester.js';
+import educationApi from '../../services/education-api.js';
 
 export default {
 	data() {
@@ -209,10 +210,10 @@ export default {
 		gpa() {
 			const passedGrades = this.grades.filter(grade => grade.status === 'passed');
 			if (passedGrades.length === 0) return '0.00';
-			
+
 			const totalPoints = passedGrades.reduce((sum, grade) => sum + (grade.gradePoint * grade.credit), 0);
 			const totalCredits = passedGrades.reduce((sum, grade) => sum + grade.credit, 0);
-			
+
 			return (totalPoints / totalCredits).toFixed(2);
 		},
 		passedCourses() {
@@ -224,6 +225,7 @@ export default {
 	},
 	onLoad() {
 		this.initSemesterData();
+		this.loadGradesData();
 	},
 	methods: {
 		initSemesterData() {
@@ -239,6 +241,29 @@ export default {
 		},
 		onSemesterChange(e) {
 			this.currentSemesterIndex = e.detail.value;
+			this.loadGradesData();
+		},
+
+		async loadGradesData() {
+			try {
+				const semester = this.semesterOptions[this.currentSemesterIndex];
+				const response = await educationApi.getGradesList(semester);
+
+				if (response.success && response.data.grades) {
+					// 更新成绩数据
+					this.grades = response.data.grades.map(grade => ({
+						...grade,
+						status: grade.score >= 60 ? 'passed' : 'failed'
+					}));
+					console.log('成绩数据加载成功');
+				} else {
+					console.warn('成绩数据为空，使用默认数据');
+					// 保持使用默认的模拟数据
+				}
+			} catch (error) {
+				console.error('加载成绩数据失败:', error);
+				// 静默失败，使用模拟数据
+			}
 		},
 		setFilter(type) {
 			this.filterType = type;

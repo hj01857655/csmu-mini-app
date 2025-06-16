@@ -11,6 +11,9 @@
  * 例如：https://api.csmu.edu.cn 或实际的生产环境API服务器地址
  */
 
+// 导入配置验证器
+import envValidator from '../utils/env-config-validator.js';
+
 // API配置
 const API_CONFIG = {
 	// 开发环境配置
@@ -32,9 +35,6 @@ const API_CONFIG = {
 // 获取当前环境配置
 const currentEnv = process.env.NODE_ENV || 'development';
 const config = API_CONFIG[currentEnv];
-
-// 导入配置验证器
-import envValidator from '../utils/env-config-validator.js';
 
 // 验证API配置
 if (process.env.NODE_ENV !== 'test') {

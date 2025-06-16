@@ -80,6 +80,7 @@
 <script>
 import semesterCalculator from '../../utils/semester.js';
 import courseTimeManager from '../../utils/course-time.js';
+import educationApi from '../../services/education-api.js';
 import dateFormatter from '../../utils/date-formatter.js';
 
 export default {
@@ -232,23 +233,25 @@ export default {
 			}
 		},
 		async loadScheduleData() {
-			// 暂时使用本地数据，避免API调用问题
 			console.log('加载课程表数据，周次:', this.currentWeekIndex + 1);
 
-			// TODO: 后续可以启用真实的API调用
-			// try {
-			//     const week = this.currentWeekIndex + 1;
-			//     const scheduleData = await educationService.getScheduleByWeek(week);
-			//     if (scheduleData && scheduleData.courses) {
-			//         this.courses = this.formatScheduleData(scheduleData.courses);
-			//     }
-			// } catch (error) {
-			//     console.error('加载课程表失败:', error);
-			//     uni.showToast({
-			//         title: '加载课程表失败',
-			//         icon: 'none'
-			//     });
-			// }
+			try {
+				// 使用新的教务API服务
+				const week = this.currentWeekIndex + 1;
+				const response = await educationApi.getCurrentSchedule(week);
+
+				if (response.success && response.data.courses) {
+					this.courses = this.formatScheduleData(response.data.courses);
+					console.log('课程表数据加载成功');
+				} else {
+					console.warn('课程表数据为空，使用默认数据');
+					// 保持使用默认的模拟数据
+				}
+			} catch (error) {
+				console.error('加载课程表失败:', error);
+				// 不显示错误提示，静默失败并使用模拟数据
+				// 这样可以确保在API不可用时仍能正常显示课程表
+			}
 		},
 		formatScheduleData(coursesData) {
 			// 将后端返回的课程数据格式化为前端需要的格式
