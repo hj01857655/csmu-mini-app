@@ -54,9 +54,6 @@
 						<view class="course-name">{{ getCourse(day.key, index).name }}</view>
 						<view class="course-location">{{ getCourse(day.key, index).location }}</view>
 						<view class="course-teacher">{{ getCourse(day.key, index).teacher }}</view>
-						<view class="today-indicator" v-if="isCurrentWeek && day.key === todayDayKey">
-							<text class="today-text">今日</text>
-						</view>
 					</view>
 				</view>
 			</view>
@@ -71,19 +68,19 @@
 				</view>
 				<view class="detail-content">
 					<view class="detail-item">
-						<text class="label">教师：</text>
+						<text class="label">👨‍🏫 教师：</text>
 						<text>{{ selectedCourse.teacher }}</text>
 					</view>
 					<view class="detail-item">
-						<text class="label">地点：</text>
+						<text class="label">📍 地点：</text>
 						<text>{{ selectedCourse.location }}</text>
 					</view>
 					<view class="detail-item">
-						<text class="label">时间：</text>
+						<text class="label">⏰ 时间：</text>
 						<text>{{ selectedCourse.timeText }}</text>
 					</view>
 					<view class="detail-item">
-						<text class="label">学分：</text>
+						<text class="label">⭐ 学分：</text>
 						<text>{{ selectedCourse.credit }}</text>
 					</view>
 				</view>
@@ -514,19 +511,70 @@ export default {
 	transition: all 0.3s ease;
 }
 
-/* 今天的课程特殊样式 */
+/* 今天的课程特殊样式 - 更自然的视觉效果 */
 .course-item.today-course {
-	background-color: #1976D2;
+	background: linear-gradient(135deg, #1976D2 0%, #42A5F5 100%);
 	color: white;
-	border-left: 6rpx solid #0D47A1;
-	box-shadow: 0 4rpx 12rpx rgba(25, 118, 210, 0.3);
-	transform: scale(1.02);
+	border-left: 8rpx solid #0D47A1;
+	box-shadow:
+		0 6rpx 20rpx rgba(25, 118, 210, 0.4),
+		0 0 0 2rpx rgba(25, 118, 210, 0.2),
+		inset 0 1rpx 0 rgba(255, 255, 255, 0.2);
+	transform: translateY(-2rpx);
+	animation: todayPulse 3s ease-in-out infinite;
+	position: relative;
+	overflow: hidden;
+}
+
+/* 添加微妙的呼吸动画 */
+@keyframes todayPulse {
+	0%, 100% {
+		box-shadow:
+			0 6rpx 20rpx rgba(25, 118, 210, 0.4),
+			0 0 0 2rpx rgba(25, 118, 210, 0.2),
+			inset 0 1rpx 0 rgba(255, 255, 255, 0.2);
+	}
+	50% {
+		box-shadow:
+			0 8rpx 25rpx rgba(25, 118, 210, 0.5),
+			0 0 0 3rpx rgba(25, 118, 210, 0.3),
+			inset 0 1rpx 0 rgba(255, 255, 255, 0.3);
+	}
+}
+
+/* 添加发光边框效果 */
+.course-item.today-course::before {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.1) 50%, transparent 70%);
+	animation: shimmer 2s ease-in-out infinite;
+	pointer-events: none;
+}
+
+@keyframes shimmer {
+	0% {
+		transform: translateX(-100%);
+	}
+	100% {
+		transform: translateX(100%);
+	}
 }
 
 .course-item.today-course .course-name,
 .course-item.today-course .course-location,
 .course-item.today-course .course-teacher {
 	color: white;
+	position: relative;
+	z-index: 2;
+}
+
+.course-item.today-course .course-name {
+	font-weight: bold;
+	text-shadow: 0 1rpx 2rpx rgba(0, 0, 0, 0.2);
 }
 
 .course-item.math {
@@ -577,75 +625,196 @@ export default {
 	color: #999;
 }
 
-/* 今日指示器 */
-.today-indicator {
-	position: absolute;
-	top: 5rpx;
-	right: 5rpx;
-	background-color: #FF5722;
-	border-radius: 20rpx;
-	padding: 2rpx 8rpx;
-	z-index: 10;
-}
 
-.today-text {
-	font-size: 16rpx;
-	color: white;
-	font-weight: bold;
-}
 
+/* 课程详情弹窗主体 - 全面美化 */
 .course-detail {
-	background-color: #fff;
-	border-radius: 20rpx;
-	width: 600rpx;
-	padding: 40rpx;
+	background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+	border-radius: 24rpx;
+	width: 640rpx;
+	max-width: 90vw;
+	padding: 0;
+	box-shadow:
+		0 20rpx 60rpx rgba(0, 0, 0, 0.15),
+		0 8rpx 20rpx rgba(0, 0, 0, 0.1),
+		0 0 0 1rpx rgba(255, 255, 255, 0.8);
+	animation: slideUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+	overflow: hidden;
+	position: relative;
 }
 
+@keyframes slideUp {
+	from {
+		opacity: 0;
+		transform: translateY(60rpx) scale(0.9);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0) scale(1);
+	}
+}
+
+/* 弹窗装饰性背景 */
+.course-detail::before {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	height: 8rpx;
+	background: linear-gradient(90deg, #1976D2, #42A5F5, #64B5F6, #42A5F5, #1976D2);
+	background-size: 200% 100%;
+	animation: gradientShift 3s ease-in-out infinite;
+}
+
+@keyframes gradientShift {
+	0%, 100% {
+		background-position: 0% 50%;
+	}
+	50% {
+		background-position: 100% 50%;
+	}
+}
+
+/* 弹窗头部 - 优化设计 */
 .detail-header {
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
-	margin-bottom: 30rpx;
-	padding-bottom: 20rpx;
-	border-bottom: 1rpx solid #e5e5e5;
+	padding: 40rpx 40rpx 30rpx;
+	margin-bottom: 0;
+	background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+	border-bottom: 2rpx solid #f0f0f0;
+	position: relative;
 }
 
+.detail-header::after {
+	content: '';
+	position: absolute;
+	bottom: 0;
+	left: 40rpx;
+	right: 40rpx;
+	height: 1rpx;
+	background: linear-gradient(90deg, transparent, #1976D2, transparent);
+}
+
+/* 课程标题 - 增强视觉效果 */
 .course-title {
-	font-size: 36rpx;
-	font-weight: bold;
-	color: #333;
+	font-size: 38rpx;
+	font-weight: 700;
+	color: #1976D2;
+	text-shadow: 0 1rpx 2rpx rgba(25, 118, 210, 0.1);
+	letter-spacing: 1rpx;
+	flex: 1;
+	margin-right: 20rpx;
 }
 
+/* 关闭按钮 - 现代化设计 */
 .close-btn {
-	font-size: 48rpx;
-	color: #999;
-	width: 60rpx;
-	height: 60rpx;
-	text-align: center;
-	line-height: 60rpx;
+	width: 64rpx;
+	height: 64rpx;
+	border-radius: 50%;
+	background: linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%);
+	color: #666;
+	font-size: 32rpx;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	transition: all 0.3s ease;
+	box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.1);
+	border: 1rpx solid rgba(0, 0, 0, 0.05);
 }
 
+.close-btn:active {
+	background: linear-gradient(135deg, #e0e0e0 0%, #d0d0d0 100%);
+	transform: scale(0.95);
+	box-shadow: 0 1rpx 4rpx rgba(0, 0, 0, 0.15);
+}
+
+/* 弹窗内容区域 */
+.detail-content {
+	padding: 30rpx 40rpx 40rpx;
+	background-color: #ffffff;
+}
+
+/* 详情项 - 优化布局和视觉 */
 .detail-item {
 	display: flex;
-	margin-bottom: 20rpx;
+	align-items: center;
+	margin-bottom: 24rpx;
+	padding: 16rpx 20rpx;
+	background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+	border-radius: 12rpx;
+	border-left: 4rpx solid #1976D2;
+	box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
+	transition: all 0.3s ease;
+	position: relative;
+	overflow: hidden;
 }
 
+.detail-item:last-child {
+	margin-bottom: 0;
+}
+
+.detail-item:hover {
+	transform: translateX(4rpx);
+	box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.08);
+}
+
+/* 详情项装饰 */
+.detail-item::before {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 4rpx;
+	height: 100%;
+	background: linear-gradient(180deg, #1976D2, #42A5F5);
+}
+
+/* 标签样式 - 添加图标效果 */
 .label {
-	width: 120rpx;
+	width: 140rpx;
 	font-size: 28rpx;
-	color: #666;
+	font-weight: 600;
+	color: #1976D2;
+	position: relative;
+	margin-right: 20rpx;
 }
 
+/* 详情值样式 */
+.detail-item text:not(.label) {
+	font-size: 28rpx;
+	color: #333;
+	font-weight: 500;
+	flex: 1;
+	line-height: 1.4;
+}
+
+/* 弹窗遮罩层 - 添加动画效果 */
 .popup-mask {
 	position: fixed;
 	top: 0;
 	left: 0;
 	right: 0;
 	bottom: 0;
-	background-color: rgba(0, 0, 0, 0.5);
+	background-color: rgba(0, 0, 0, 0.6);
 	display: flex;
 	justify-content: center;
 	align-items: center;
 	z-index: 1000;
+	backdrop-filter: blur(4rpx);
+	animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+	from {
+		opacity: 0;
+		backdrop-filter: blur(0);
+	}
+	to {
+		opacity: 1;
+		backdrop-filter: blur(4rpx);
+	}
 }
 </style>
