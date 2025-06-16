@@ -1,0 +1,140 @@
+{
+	"pages": [
+		{
+			"path": "pages/login/login",
+			"style": {
+				"navigationBarTitleText": "登录",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/home/home",
+			"style": {
+				"navigationBarTitleText": "首页"
+			}
+		},
+		{
+			"path": "pages/schedule/schedule",
+			"style": {
+				"navigationBarTitleText": "课程表"
+			}
+		},
+		{
+			"path": "pages/grades/grades",
+			"style": {
+				"navigationBarTitleText": "成绩查询"
+			}
+		},
+		{
+			"path": "pages/profile/profile",
+			"style": {
+				"navigationBarTitleText": "个人中心"
+			}
+		},
+		{
+			"path": "pages/exam/exam",
+			"style": {
+				"navigationBarTitleText": "考试安排"
+			}
+		},
+		{
+			"path": "pages/course-selection/course-selection",
+			"style": {
+				"navigationBarTitleText": "选课系统"
+			}
+		},
+		{
+			"path": "pages/notices/notices",
+			"style": {
+				"navigationBarTitleText": "校园通知"
+			}
+		},
+		{
+			"path": "pages/semester-info/semester-info",
+			"style": {
+				"navigationBarTitleText": "学期信息"
+			}
+		},
+		{
+			"path": "pages/evaluation/evaluation",
+			"style": {
+				"navigationBarTitleText": "教学评价"
+			}
+		},
+		{
+			"path": "pages/evaluation-form/evaluation-form",
+			"style": {
+				"navigationBarTitleText": "课程评价"
+			}
+		},
+		{
+			"path": "pages/evaluation-detail/evaluation-detail",
+			"style": {
+				"navigationBarTitleText": "评价详情"
+			}
+		},
+		{
+			"path": "pages/profile-detail/profile-detail",
+			"style": {
+				"navigationBarTitleText": "个人资料",
+				"navigationBarTextStyle": "white",
+				"navigationBarBackgroundColor": "#1976D2",
+				"enablePullDownRefresh": false
+			}
+		},
+		{
+			"path": "pages/change-password/change-password",
+			"style": {
+				"navigationBarTitleText": "修改密码",
+				"navigationBarTextStyle": "white",
+				"navigationBarBackgroundColor": "#1976D2",
+				"enablePullDownRefresh": false
+			}
+		},
+		{
+			"path": "pages/edit-profile/edit-profile",
+			"style": {
+				"navigationBarTitleText": "编辑信息",
+				"navigationBarTextStyle": "white",
+				"navigationBarBackgroundColor": "#1976D2",
+				"enablePullDownRefresh": false
+			}
+		},
+		{
+			"path": "pages/test-week/test-week",
+			"style": {
+				"navigationBarTitleText": "周次计算测试",
+				"navigationBarTextStyle": "white",
+				"navigationBarBackgroundColor": "#1976D2",
+				"enablePullDownRefresh": false
+			}
+		}
+	],
+	"globalStyle": {
+		"navigationBarTextStyle": "white",
+		"navigationBarTitleText": "强智教务系统",
+		"navigationBarBackgroundColor": "#1976D2",
+		"backgroundColor": "#F5F7FA"
+	},
+	"tabBar": {
+		"color": "#8A8A8A",
+		"selectedColor": "#1976D2",
+		"borderStyle": "white",
+		"backgroundColor": "#ffffff",
+		"list": [
+			{
+				"pagePath": "pages/home/home",
+				"text": "首页"
+			},
+			{
+				"pagePath": "pages/schedule/schedule",
+				"text": "课程表"
+			},
+			{
+				"pagePath": "pages/profile/profile",
+				"text": "个人中心"
+			}
+		]
+	},
+	"uniIdRouter": {}
+}
