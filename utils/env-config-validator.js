@@ -278,6 +278,25 @@ class EnvironmentConfigValidator {
 	}
 
 	/**
+	 * 小程序环境兼容的环境变量获取函数
+	 */
+	getEnvVar(key, defaultValue = '') {
+		if (typeof process !== 'undefined' && process.env) {
+			return process.env[key] || defaultValue;
+		}
+
+		// 小程序环境下的备用配置
+		const envConfig = {
+			'NODE_ENV': 'development',
+			'VUE_APP_API_BASE_URL': '',
+			'VUE_APP_ENABLE_MOCK': 'true',
+			'VUE_APP_DEBUG': 'true'
+		};
+
+		return envConfig[key] || defaultValue;
+	}
+
+	/**
 	 * 验证环境变量配置
 	 * @returns {Object} 验证结果
 	 */
@@ -297,23 +316,24 @@ class EnvironmentConfigValidator {
 		];
 
 		requiredVars.forEach(varName => {
-			if (!process.env[varName]) {
+			if (!this.getEnvVar(varName)) {
 				results.warnings.push(`缺少环境变量: ${varName}`);
 			}
 		});
 
 		// 检查生产环境特定配置
 		if (this.currentEnv === 'production') {
-			if (process.env.VUE_APP_ENABLE_MOCK === 'true') {
+			if (this.getEnvVar('VUE_APP_ENABLE_MOCK') === 'true') {
 				results.errors.push('生产环境不应启用模拟数据');
 				results.isValid = false;
 			}
 
-			if (process.env.VUE_APP_DEBUG === 'true') {
+			if (this.getEnvVar('VUE_APP_DEBUG') === 'true') {
 				results.warnings.push('生产环境建议禁用调试模式');
 			}
 
-			if (!process.env.VUE_APP_API_BASE_URL?.startsWith('https')) {
+			const apiBaseUrl = this.getEnvVar('VUE_APP_API_BASE_URL');
+			if (apiBaseUrl && !apiBaseUrl.startsWith('https')) {
 				results.warnings.push('生产环境建议使用HTTPS协议');
 			}
 		}

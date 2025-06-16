@@ -69,6 +69,10 @@
 					<view class="action-icon evaluation-icon">⭐</view>
 					<text class="action-text">教学评价</text>
 				</view>
+				<view class="action-item" @click="navigateTo('/pages/config-test/config-test')">
+					<view class="action-icon test-icon">🔧</view>
+					<text class="action-text">配置测试</text>
+				</view>
 			</view>
 		</view>
 
@@ -284,8 +288,12 @@ export default {
 			console.log('🏠 首页 - 当前学期信息:', this.currentSemesterInfo);
 
 			// 在开发环境中验证周次计算
-			if (process.env.NODE_ENV === 'development') {
-				semesterCalculator.validateWeekCalculation();
+			try {
+				if (typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'development') {
+					semesterCalculator.validateWeekCalculation();
+				}
+			} catch (e) {
+				// 小程序环境中忽略此检查
 			}
 		},
 

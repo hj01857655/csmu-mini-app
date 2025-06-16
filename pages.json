@@ -108,6 +108,15 @@
 				"navigationBarBackgroundColor": "#1976D2",
 				"enablePullDownRefresh": false
 			}
+		},
+		{
+			"path": "pages/config-test/config-test",
+			"style": {
+				"navigationBarTitleText": "配置测试",
+				"navigationBarTextStyle": "white",
+				"navigationBarBackgroundColor": "#1976D2",
+				"enablePullDownRefresh": false
+			}
 		}
 	],
 	"globalStyle": {

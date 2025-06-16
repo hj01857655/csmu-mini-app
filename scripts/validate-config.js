@@ -24,13 +24,13 @@ class ConfigValidator {
 
         // 验证环境变量
         this.validateEnvironmentVariables();
-        
+
         // 验证API配置
         this.validateApiConfig();
-        
+
         // 验证文件存在性
         this.validateRequiredFiles();
-        
+
         // 验证生产环境特定配置
         if (this.currentEnv === 'production') {
             this.validateProductionConfig();
@@ -38,9 +38,29 @@ class ConfigValidator {
 
         // 输出验证结果
         this.outputResults();
-        
+
         // 返回验证状态
         return this.errors.length === 0;
+    }
+
+    /**
+     * 小程序环境兼容的环境变量获取函数
+     */
+    getEnvVar(key, defaultValue = '') {
+        if (typeof process !== 'undefined' && process.env) {
+            return process.env[key] || defaultValue;
+        }
+
+        // 小程序环境下的备用配置
+        const envConfig = {
+            'NODE_ENV': 'development',
+            'VUE_APP_API_BASE_URL': 'http://localhost:8000/api/v1',
+            'VUE_APP_ENABLE_MOCK': 'true',
+            'VUE_APP_DEBUG': 'true',
+            'VUE_APP_API_TIMEOUT': '10000'
+        };
+
+        return envConfig[key] || defaultValue;
     }
 
     /**
@@ -62,19 +82,21 @@ class ConfigValidator {
 
         // 检查必需变量
         requiredVars.forEach(varName => {
-            if (!process.env[varName]) {
+            const value = this.getEnvVar(varName);
+            if (!value) {
                 this.errors.push(`缺少必需的环境变量: ${varName}`);
             } else {
-                console.log(`  ✅ ${varName}: ${process.env[varName]}`);
+                console.log(`  ✅ ${varName}: ${value}`);
             }
         });
 
         // 检查推荐变量
         recommendedVars.forEach(varName => {
-            if (!process.env[varName]) {
+            const value = this.getEnvVar(varName);
+            if (!value) {
                 this.warnings.push(`建议设置环境变量: ${varName}`);
             } else {
-                console.log(`  ✅ ${varName}: ${process.env[varName]}`);
+                console.log(`  ✅ ${varName}: ${value}`);
             }
         });
 
@@ -88,23 +110,23 @@ class ConfigValidator {
         console.log('🔗 验证API配置...');
 
         const apiBaseUrl = process.env.VUE_APP_API_BASE_URL;
-        
+
         if (apiBaseUrl) {
             // 检查URL格式
             try {
                 const url = new URL(apiBaseUrl);
                 console.log(`  ✅ API地址格式正确: ${apiBaseUrl}`);
-                
+
                 // 检查协议
                 if (this.currentEnv === 'production' && url.protocol !== 'https:') {
                     this.warnings.push('生产环境建议使用HTTPS协议');
                 }
-                
+
                 // 检查是否为localhost
                 if (this.currentEnv === 'production' && (url.hostname === 'localhost' || url.hostname === '127.0.0.1')) {
                     this.errors.push('生产环境不应使用localhost地址');
                 }
-                
+
             } catch (error) {
                 this.errors.push(`API地址格式错误: ${apiBaseUrl}`);
             }
@@ -273,7 +295,7 @@ class ConfigValidator {
 async function main() {
     const validator = new ConfigValidator();
     const isValid = await validator.runAllValidations();
-    
+
     // 如果验证失败，退出并返回错误码
     if (!isValid) {
         process.exit(1);
