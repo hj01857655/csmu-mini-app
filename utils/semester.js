@@ -511,9 +511,9 @@ class SemesterCalculator {
 			{ date: '2025-02-17', expectedWeek: 1, description: '学期第一天（周一）' },
 			{ date: '2025-02-23', expectedWeek: 1, description: '第一周周日' },
 			{ date: '2025-02-24', expectedWeek: 2, description: '第二周周一' },
-			{ date: '2025-06-16', expectedWeek: 17, description: '当前日期' },
-			{ date: '2025-06-22', expectedWeek: 17, description: '当前周周日' },
-			{ date: '2025-06-23', expectedWeek: 18, description: '下周周一' }
+			{ date: '2025-06-16', expectedWeek: 18, description: '当前日期' },
+			{ date: '2025-06-22', expectedWeek: 18, description: '当前周周日' },
+			{ date: '2025-06-23', expectedWeek: 19, description: '下周周一' }
 		];
 
 		console.log('🧪 测试用例验证:');
